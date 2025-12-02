@@ -15,27 +15,36 @@ La web pública deberá mostrar:
 - Página de contacto
 - Cómo hacerse socio
 
+### Tipos de plan
+
+- Basic: 19,99€/mes. Acceso a gimnasio, acceso a actividades básicas, acceso a vestuarios y duchas, app móvil.
+- Pro: 29,99€/mes. Plan Basic + acceso a actividades pro, descuentos en tienda, invitaciones para amigos, acceso a sauna y piscina, prioridad para asistir a actividades.
+- Platino:  Plan Pro + acceso a spa, monitores personalizado, programa nutricional, toalla y acceso a taquilla gratuita, parking gratis.
+
 Además:
 - Los usuarios no registrados podrán **enviar una solicitud para ser socio**.
-- Las solicitudes deberán ser **aceptadas o rechazadas** por un administrador (webmaster).
+- Una vez enviado el formulario, el webmaster deberá aceptar al usuario.
+- Una vez aceptado, se le enviará al usuario un mail con un enlace donde se pasará a la TPVV para elegir el tipo de plan que quiere el socio.
 
 ---
 
 ## 3. Web privada – Perfil *Socio*
 Los socios serán usuarios registrados con acceso privado. Tendrán las siguientes funcionalidades:
 
-### Acceso a instalaciones
-- Entrada gratuita a las salas generales (musculación, bicicletas, etc.).
 
 ### Reservas de actividades con monitor
 - Consultar actividades disponibles (Spinning, Crossfit, etc.).
 - Reservar plaza en una actividad.
-- Si una actividad tiene coste extra, este se **descontará del saldo del socio**.
+- Si una actividad tiene un plan superior,no se podrá acceder y habría que mejorar el plan.
 
-### Gestión del saldo
-- El socio deberá tener saldo suficiente para reservar actividades con coste.
-- Si no tiene saldo, **no podrá reservar**.
-- Podrá **recargar saldo mediante un TPVV** (interoperación obligatoria).
+### Gestión del plan
+- El socio deberá tener asociado un método de pago para poder contratar un plan.
+- Si no tiene un método de pago actualizado, se le cancelará su suscripción y no podrá acceder al gimnasio.
+- Podrá cambiar su plan mensual a través del TPVV con su pasarela de pago.
+
+### Actividades dependiendo del plan
+- Se comprueba el plan actual del usuario y solo dejará reservar si el plan es el correcto.
+- Si el socio no tiene el plan correcto, se le llevará a una pantalla para que cambie el plan y lo pague.
 
 ---
 
@@ -64,42 +73,16 @@ Un monitor podrá:
 
 ---
 
-## 6. Reservas y pagos
-### Actividades gratuitas
-- No requieren saldo.
-
-### Actividades con coste extra
-- Se descuenta automáticamente del saldo del socio.
-- Si el socio no tiene saldo → **la reserva se bloquea**.
-
-### Recargar saldo
-- El socio podrá recargar mediante **TPVV** (pasarela de pago).
-- El TPVV forma parte de la **interoperación obligatoria** del proyecto.
-
----
-
 ## 7. Interoperación obligatoria
-El proyecto debe comunicarse con sistemas externos mediante API.
+El proyecto debe comunicarse con sistemas externos de compañeros.
 
 ### TPV Virtual (TPVV)
-- Para que los socios recarguen saldo usando tarjeta.
-- Puede ser: el TPV de otro grupo o un TPV online de ejemplo (API).
+- Para que los socios cambien su tipo de plan.
 
 ### Mostrar productos de una tienda online
 En la web del gimnasio se deberá mostrar, al menos:
 - Categorías
 - Productos de una tienda online (otro grupo)
 
-La integración será **vía API REST**, no vía base de datos compartida.
-
 ---
 
-## 8. Funcionalidades principales (resumen)
-- Web pública informativa
-- Solicitud de socio
-- Registro/login de socios aceptados
-- Perfil socio: reservas, saldo, TPV
-- Perfil administrador: socios, actividades, informes
-- Perfil monitor (opcional)
-- Interoperación TPV
-- Interoperación Tienda online
