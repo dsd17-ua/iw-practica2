@@ -12,7 +12,7 @@ class PlanSeeder extends Seeder
     {
         DB::table('planes')->insert([
             [
-                'nombre' => 'Plan Básico',
+                'nombre' => 'Plan Basico',
                 'precio_mensual' => 30.00,
                 'clases_gratis_incluidas' => 2,
                 'descripcion' => 'Acceso al gimnasio + 2 clases con coste extra incluidas.',

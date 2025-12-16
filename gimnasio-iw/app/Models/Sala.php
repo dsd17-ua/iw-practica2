@@ -6,5 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Sala extends Model
 {
-    //
+    use HasFactory;
+    protected $table = 'salas'; // Laravel buscaría 'sala'
 }
