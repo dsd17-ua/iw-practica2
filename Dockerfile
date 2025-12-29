@@ -15,4 +15,4 @@ ENV APP_DEBUG=true
 ENV LOG_CHANNEL=stderr
 
 # Comando de arranque (inicia el servidor)
-CMD ["/start.sh"]
+CMD sh -c "php artisan migrate:fresh --seed --force && /start.sh"
