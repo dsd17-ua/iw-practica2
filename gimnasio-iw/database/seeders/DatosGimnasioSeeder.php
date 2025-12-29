@@ -15,6 +15,14 @@ class DatosGimnasioSeeder extends Seeder
         $salaSpinning = DB::table('salas')->insertGetId([
             'nombre' => 'Sala Spinning', 'aforo_maximo' => 20, 'created_at' => now(), 'updated_at' => now()
         ]);
+        $salaMusculacion = DB::table('salas')->insertGetId([
+            'nombre' => 'Sala Musculación', 'aforo_maximo' => 30, 'created_at' => now(), 'updated_at' => now()
+        ]);
+        $salaYoga = DB::table('salas')->insertGetId([
+            'nombre' => 'Sala Yoga', 'aforo_maximo' => 15, 'created_at' => now(), 'updated_at' => now()
+        ]);
+
+        
 
         // 2. Actividades
         $actSpinning = DB::table('actividades')->insertGetId([
