@@ -34,6 +34,7 @@
                     @include('partials.header')
                 </div>
             </div>
+            @include('partials.footer')
         </div>
     </body>
 </html>
