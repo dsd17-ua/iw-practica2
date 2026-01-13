@@ -15,7 +15,7 @@ class PlanSeeder extends Seeder
                 'nombre' => 'Plan Basico',
                 'precio_mensual' => 30.00,
                 'clases_gratis_incluidas' => 2,
-                'descripcion' => 'Acceso al gimnasio + 2 clases con coste extra incluidas.',
+                'descripcion' => 'Acceso a las instalaciones del gimnasio.',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -23,7 +23,7 @@ class PlanSeeder extends Seeder
                 'nombre' => 'Plan Premium',
                 'precio_mensual' => 45.00,
                 'clases_gratis_incluidas' => 6,
-                'descripcion' => 'Acceso total + 6 clases con coste extra incluidas.',
+                'descripcion' => 'Acceso total a las instalaciones del gimnasio.',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]
