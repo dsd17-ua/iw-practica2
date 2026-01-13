@@ -17,21 +17,21 @@ Route::get('/', function () {
             return redirect()->route('monitor.dashboard');
         }
     }
-    return view('inicio');
+    return view('public.inicio');
 })->name('inicio');
 
 Route::get('/actividades', function () {
     $actividades = DB::table('actividades')->orderBy('nombre')->get();
-    return view('actividades', compact('actividades'));
+    return view('public.actividades', compact('actividades'));
 })->name('actividades');
 
 Route::get('/tarifas', function () {
     $planes = DB::table('planes')->orderBy('precio_mensual')->get();
-    return view('tarifas', compact('planes'));
+    return view('public.tarifas', compact('planes'));
 })->name('tarifas');
 
 Route::get('/contacto', function () {
-    return view('contacto');
+    return view('public.contacto');
 })->name('contacto');
 
 Route::post('/contacto', function (Request $request) {
@@ -55,7 +55,7 @@ Route::post('/contacto', function (Request $request) {
 })->name('contacto.submit');
 
 Route::get('/login', function () {
-    return view('login');
+    return view('public.login');
 })->name('login');
 
 Route::post('/login', function (Request $request) {
