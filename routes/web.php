@@ -88,3 +88,13 @@ Route::post('/logout', function (Request $request) {
 Route::get('/socio/dashboard', function () {
     return view('socio.dashboard');
 })->name('socio.dashboard')->middleware('auth', 'role:socio');
+
+// Rutas del webmaster
+Route::get('/webmaster/dashboard', function () {
+    return view('webmaster.dashboard');
+})->name('webmaster.dashboard')->middleware('auth', 'role:webmaster');
+
+// Rutas del monitor
+Route::get('/monitor/dashboard', function () {
+    return view('monitor.dashboard');
+})->name('monitor.dashboard')->middleware('auth', 'role:monitor');
