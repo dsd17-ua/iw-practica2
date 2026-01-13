@@ -26,7 +26,31 @@ class DatosGimnasioSeeder extends Seeder
 
         // 2. Actividades
         $actSpinning = DB::table('actividades')->insertGetId([
-            'nombre' => 'Spinning', 'created_at' => now(), 'updated_at' => now()
+            'nombre' => 'Spinning',
+            'descripcion' => 'Actividad de spinning en sala especializada',
+            'imagen_url' => 'https://images.unsplash.com/photo-1625594755684-a73285a64f66?auto=format&fit=crop&w=1200&q=80', 
+            'created_at' => now(), 'updated_at' => now()
+        ]);
+
+        DB::table('actividades')->insert([
+            'nombre' => 'Musculación',
+            'descripcion' => 'Entrenamiento de fuerza en sala de musculación',
+            'imagen_url' => 'https://images.unsplash.com/photo-1632077804406-188472f1a810?auto=format&fit=crop&w=1200&q=80', 
+            'created_at' => now(), 'updated_at' => now()
+        ]);
+
+        DB::table('actividades')->insert([
+            'nombre' => 'Crossfit',
+            'descripcion' => 'Entrenamiento funcional de alta intensidad',
+            'imagen_url' => 'https://images.unsplash.com/photo-1639504031765-ca21aecb7252?auto=format&fit=crop&w=1200&q=80', 
+            'created_at' => now(), 'updated_at' => now()
+        ]);
+
+        DB::table('actividades')->insert([
+            'nombre' => 'Yoga',
+            'descripcion' => 'Sesiones de yoga para mejorar flexibilidad y relajación',
+            'imagen_url' => 'https://images.unsplash.com/photo-1616940779493-6958fbd615fe?auto=format&fit=crop&w=1200&q=80', 
+            'created_at' => now(), 'updated_at' => now()
         ]);
 
         // 3. Usuarios: Un MONITOR y un SOCIO

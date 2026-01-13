@@ -14,7 +14,7 @@
         <nav class="flex flex-1 justify-center">
             <ul class="flex flex-wrap items-center gap-6 text-sm font-medium text-gray-600">
                 <li><a href="/" class="transition hover:text-black">Inicio</a></li>
-                <li><a href="/actividades" class="transition hover:text-black">Instalaciones</a></li>
+                <li><a href="/actividades" class="transition hover:text-black">Actividades</a></li>
                 <li><a href="/tarifas" class="transition hover:text-black">Tarifas</a></li>
                 <li><a href="/contacto" class="transition hover:text-black">Contacto</a></li>
             </ul>
