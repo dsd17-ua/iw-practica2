@@ -69,5 +69,5 @@
 @endsection
 
 @section('footer')
-    @include('partials.footer')
+    @include('partials.public-footer')
 @endsection
