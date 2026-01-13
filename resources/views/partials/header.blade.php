@@ -13,16 +13,16 @@
 
         <nav class="flex flex-1 justify-center">
             <ul class="flex flex-wrap items-center gap-6 text-sm font-medium text-gray-600">
-                <li><a href="/" class="transition hover:text-black">Inicio</a></li>
-                <li><a href="/actividades" class="transition hover:text-black">Actividades</a></li>
-                <li><a href="/tarifas" class="transition hover:text-black">Tarifas</a></li>
-                <li><a href="/contacto" class="transition hover:text-black">Contacto</a></li>
+                <li><a href="{{ route('inicio') }}" class="transition hover:text-black">Inicio</a></li>
+                <li><a href="{{ route('actividades') }}" class="transition hover:text-black">Actividades</a></li>
+                <li><a href="{{ route('tarifas') }}" class="transition hover:text-black">Tarifas</a></li>
+                <li><a href="{{ route('contacto') }}" class="transition hover:text-black">Contacto</a></li>
             </ul>
         </nav>
 
         <div class="flex items-center justify-end gap-3">
             <a href="#" class="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Hazte Socio</a>
-            <a href="#" class="rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200">Acceder</a>
+            <a href="{{ route('login') }}" class="rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200">Acceder</a>
         </div>
     </div>
 </header>
