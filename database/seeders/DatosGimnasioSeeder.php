@@ -18,7 +18,7 @@ class DatosGimnasioSeeder extends Seeder
             ['nombre' => 'Sala Spinning', 'aforo_maximo' => 20],
             ['nombre' => 'Sala Musculación', 'aforo_maximo' => 30],
             ['nombre' => 'Sala Yoga/Pilates', 'aforo_maximo' => 15],
-            ['nombre' => 'Sala Polivalente', 'aforo_maximo' => 25], // Nueva
+            ['nombre' => 'Sala Polivalente', 'aforo_maximo' => 25],
         ];
 
         $salaIds = [];
@@ -54,17 +54,17 @@ class DatosGimnasioSeeder extends Seeder
         // 3. USUARIOS (Staff y Socios)
         // ==========================================
         
-        // A. Webmaster (en rol usaremos admin)
+        // A. Webmaster / Admin
         DB::table('users')->insert([
             'nombre' => 'Admin Boss',
             'email' => 'admin@admin.com',
             'password' => Hash::make('1234'),
-            'rol' => 'admin',
+            'rol' => 'admin', // Asegúrate de que tu enum permita 'admin' o 'webmaster'
             'estado' => 'activo',
             'created_at' => now(), 'updated_at' => now()
         ]);
 
-        // B. Monitores (Creamos 3 perfiles distintos)
+        // B. Monitores
         $monitorAnaId = DB::table('users')->insertGetId([
             'nombre' => 'Ana (Monitora)', 'email' => 'ana@monitor.com', 'password' => Hash::make('1234'),
             'rol' => 'monitor', 'estado' => 'activo', 'created_at' => now(), 'updated_at' => now()
@@ -75,17 +75,17 @@ class DatosGimnasioSeeder extends Seeder
             'rol' => 'monitor', 'estado' => 'activo', 'created_at' => now(), 'updated_at' => now()
         ]);
 
-        // C. Socios (Pepe y un grupo de relleno)
+        // C. Socios
         $sociosIds = [];
 
-        // Pepe (Nuestro socio de pruebas)
+        // Pepe
         $sociosIds[] = DB::table('users')->insertGetId([
             'nombre' => 'Pepe Socio', 'email' => 'pepe@socio.com', 'dni' => '12345678X',
             'password' => Hash::make('1234'), 'rol' => 'socio', 'estado' => 'activo',
             'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
         ]);
 
-        // Generar 10 socios aleatorios para rellenar las clases
+        // 10 socios aleatorios
         $nombres = ['Lucía', 'Marcos', 'Elena', 'Javier', 'Sofía', 'Daniel', 'Paula', 'Diego', 'Carmen', 'Roberto'];
         foreach ($nombres as $index => $nombre) {
             $sociosIds[] = DB::table('users')->insertGetId([
@@ -95,7 +95,7 @@ class DatosGimnasioSeeder extends Seeder
                 'password' => Hash::make('1234'),
                 'rol' => 'socio',
                 'estado' => 'activo',
-                'plan_id' => rand(1, 2), // Asignar planes al azar
+                'plan_id' => rand(1, 2),
                 'created_at' => now(), 'updated_at' => now()
             ]);
         }
@@ -107,8 +107,6 @@ class DatosGimnasioSeeder extends Seeder
         // Helper para crear clases rápido
         $crearClase = function($actId, $salaId, $monitorId, $fechaInicio, $sociosDisponibles) {
             $fechaFin = (clone $fechaInicio)->addHour();
-            
-            // Si la fecha ya pasó, estado 'finalizada', si no 'programada'
             $estado = $fechaInicio->isPast() ? 'finalizada' : 'programada';
 
             $claseId = DB::table('clases')->insertGetId([
@@ -122,8 +120,8 @@ class DatosGimnasioSeeder extends Seeder
                 'created_at' => now(), 'updated_at' => now()
             ]);
 
-            // Crear reservas aleatorias (entre 5 y 15 personas)
-            $numAsistentes = rand(5, 15);
+            // Crear reservas aleatorias
+            $numAsistentes = rand(3, 15);
             $asistentes = collect($sociosDisponibles)->random(min($numAsistentes, count($sociosDisponibles)));
 
             foreach ($asistentes as $socioId) {
@@ -138,29 +136,57 @@ class DatosGimnasioSeeder extends Seeder
         };
 
         // --- A. Clases del PASADO (Histórico) ---
-        // Hace 2 días
         $crearClase($actIds['Spinning'], $salaIds['Sala Spinning'], $monitorAnaId, Carbon::now()->subDays(2)->setHour(10), $sociosIds);
         $crearClase($actIds['Yoga'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, Carbon::now()->subDays(2)->setHour(18), $sociosIds);
-        // Ayer
         $crearClase($actIds['Crossfit'], $salaIds['Sala Polivalente'], $monitorCarlosId, Carbon::now()->subDays(1)->setHour(19), $sociosIds);
 
         // --- B. Clases de HOY ---
-        // Una por la mañana (ya pasó, pero es hoy)
-        $crearClase($actIds['Pilates'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, Carbon::now()->startOfDay()->setHour(9), $sociosIds);
-        
-        // Una AHORA MISMO (o casi)
-        $crearClase($actIds['Spinning'], $salaIds['Sala Spinning'], $monitorAnaId, Carbon::now()->addMinutes(30), $sociosIds);
-        
-        // Una por la tarde/noche (Futura hoy)
-        $crearClase($actIds['Zumba'], $salaIds['Sala Polivalente'], $monitorAnaId, Carbon::now()->startOfDay()->setHour(20), $sociosIds);
+        $crearClase($actIds['Pilates'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, Carbon::now()->startOfDay()->setHour(9), $sociosIds); // Mañana
+        $crearClase($actIds['Spinning'], $salaIds['Sala Spinning'], $monitorAnaId, Carbon::now()->addMinutes(30), $sociosIds); // Inminente
+        $crearClase($actIds['Zumba'], $salaIds['Sala Polivalente'], $monitorAnaId, Carbon::now()->startOfDay()->setHour(20), $sociosIds); // Tarde
 
-        // --- C. Clases del FUTURO (Calendario) ---
-        // Mañana
+        // --- C. Clases Mañana y Pasado (Cercanas) ---
         $crearClase($actIds['Musculación'], $salaIds['Sala Musculación'], $monitorCarlosId, Carbon::now()->addDay()->setHour(10), $sociosIds);
         $crearClase($actIds['Yoga'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, Carbon::now()->addDay()->setHour(17), $sociosIds);
-        
-        // Pasado mañana
         $crearClase($actIds['Spinning'], $salaIds['Sala Spinning'], $monitorAnaId, Carbon::now()->addDays(2)->setHour(18), $sociosIds);
         $crearClase($actIds['Crossfit'], $salaIds['Sala Polivalente'], $monitorCarlosId, Carbon::now()->addDays(2)->setHour(19), $sociosIds);
+
+        // --- D. RUTINA SEMANAL (PRÓXIMAS 4 SEMANAS) ---
+        // Generamos clases automáticas para rellenar el calendario futuro
+        $fechaBase = Carbon::now()->startOfWeek(); // Empezamos a contar desde el lunes de esta semana
+
+        // Repetimos la rutina durante 4 semanas hacia adelante
+        for ($semana = 1; $semana <= 4; $semana++) {
+            
+            // Calculamos el lunes de la semana "N"
+            $lunesSemana = (clone $fechaBase)->addWeeks($semana);
+
+            // LUNES: Spinning (18:00) - Ana
+            $crearClase($actIds['Spinning'], $salaIds['Sala Spinning'], $monitorAnaId, 
+                (clone $lunesSemana)->setHour(18)->setMinute(0), $sociosIds);
+
+            // MARTES: Pilates (09:00) - Ana y Crossfit (19:00) - Carlos
+            $crearClase($actIds['Pilates'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, 
+                (clone $lunesSemana)->addDays(1)->setHour(9)->setMinute(0), $sociosIds);
+            
+            $crearClase($actIds['Crossfit'], $salaIds['Sala Polivalente'], $monitorCarlosId, 
+                (clone $lunesSemana)->addDays(1)->setHour(19)->setMinute(0), $sociosIds);
+
+            // MIÉRCOLES: Yoga (10:00) - Ana
+            $crearClase($actIds['Yoga'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, 
+                (clone $lunesSemana)->addDays(2)->setHour(10)->setMinute(0), $sociosIds);
+
+            // JUEVES: Musculación Dirigida (11:00) - Carlos
+            $crearClase($actIds['Musculación'], $salaIds['Sala Musculación'], $monitorCarlosId, 
+                (clone $lunesSemana)->addDays(3)->setHour(11)->setMinute(0), $sociosIds);
+
+            // VIERNES: Zumba Party (17:00) - Ana
+            $crearClase($actIds['Zumba'], $salaIds['Sala Polivalente'], $monitorAnaId, 
+                (clone $lunesSemana)->addDays(4)->setHour(17)->setMinute(0), $sociosIds);
+            
+            // SÁBADO: Crossfit Matinal (10:00) - Carlos
+            $crearClase($actIds['Crossfit'], $salaIds['Sala Polivalente'], $monitorCarlosId, 
+                (clone $lunesSemana)->addDays(5)->setHour(10)->setMinute(0), $sociosIds);
+        }
     }
 }
