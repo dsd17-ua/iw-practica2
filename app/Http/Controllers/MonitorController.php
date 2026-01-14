@@ -68,25 +68,27 @@ class MonitorController extends Controller
     public function misActividades(Request $request)
     {
         $monitorId = Auth::id();
-        $now = Carbon::now();
+        
+        // CAMBIO CLAVE: En vez de 'now()', usamos 'startOfDay()'
+        // Esto coge fecha y hora 00:00:00 de HOY.
+        $desdeHoy = Carbon::now()->startOfDay();
 
-        // Clases FUTURAS (ordenadas por fecha más próxima)
+        // Clases (ordenadas por fecha más próxima)
         $clases = DB::table('clases')
             ->join('actividades', 'clases.actividad_id', '=', 'actividades.id')
             ->join('salas', 'clases.sala_id', '=', 'salas.id')
             ->select('clases.*', 'actividades.nombre as actividad_nombre', 'salas.nombre as sala_nombre')
             ->where('monitor_id', $monitorId)
-            ->where('fecha_inicio', '>=', $now)
+            ->where('fecha_inicio', '>=', $desdeHoy) // <--- Ahora busca desde las 00:00 de hoy
             ->orderBy('fecha_inicio', 'asc')
             ->get();
 
-        // Contar inscritos para cada clase (Barra de progreso)
+        // ... (El resto del código del método sigue igual: contar inscritos, etc.)
         foreach ($clases as $clase) {
             $clase->inscritos = DB::table('reservas')->where('clase_id', $clase->id)->count();
-            $clase->porcentaje = ($clase->inscritos / $clase->plazas_totales) * 100;
+            $clase->porcentaje = $clase->plazas_totales > 0 ? ($clase->inscritos / $clase->plazas_totales) * 100 : 0;
         }
-
-        // Lógica para el panel derecho (Detalles de una clase seleccionada)
+        
         $claseSeleccionada = null;
         $participantes = [];
 
