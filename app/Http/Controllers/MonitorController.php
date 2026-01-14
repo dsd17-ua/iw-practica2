@@ -118,9 +118,18 @@ class MonitorController extends Controller
             ->join('salas', 'clases.sala_id', '=', 'salas.id')
             ->select('clases.*', 'actividades.nombre as actividad_nombre', 'salas.nombre as sala_nombre')
             ->where('monitor_id', $monitorId)
-            ->where('fecha_inicio', '<', $now) // <--- FECHA PASADA
+            ->where('fecha_inicio', '<', $now)
             ->orderBy('fecha_inicio', 'desc')
             ->get();
+
+        // NUEVO: Buscamos los participantes para cada clase del historial
+        foreach ($clases as $clase) {
+            $clase->participantes = DB::table('reservas')
+                ->join('users', 'reservas.user_id', '=', 'users.id')
+                ->where('clase_id', $clase->id)
+                ->select('users.nombre', 'users.email')
+                ->get();
+        }
 
         return view('monitor.historico', compact('clases'));
     }
