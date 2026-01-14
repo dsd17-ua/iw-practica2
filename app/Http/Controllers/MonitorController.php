@@ -65,25 +65,33 @@ class MonitorController extends Controller
         return view('monitor.dashboard', compact('calendario', 'clasesSemanaCount', 'inicioSemana', 'finSemana', 'offset', 'diasSemana'));
     }
     // 2. VISTA MIS ACTIVIDADES (Lista futura + Detalles)
+
+    /*
+        Si vas a "Mis Actividades", se verá a la izquierda solo las clases futuras 
+
+        Si estamos en el Dashboard y hacemos clic en una clase de hace 3 días -> "Ver Participantes".
+
+        Te llevará a la página de actividades. La lista de la izquierda seguirá mostrando solo el futuro.
+
+        Pero el panel de la derecha cargará correctamente los datos y participantes de esa clase antigua.
+
+    */
     public function misActividades(Request $request)
     {
         $monitorId = Auth::id();
-        
-        // CAMBIO CLAVE: En vez de 'now()', usamos 'startOfDay()'
-        // Esto coge fecha y hora 00:00:00 de HOY.
         $desdeHoy = Carbon::now()->startOfDay();
 
-        // Clases (ordenadas por fecha más próxima)
+        // 1. LISTA IZQUIERDA: Solo clases Futuras y de Hoy (para no llenar la lista de basura antigua)
         $clases = DB::table('clases')
             ->join('actividades', 'clases.actividad_id', '=', 'actividades.id')
             ->join('salas', 'clases.sala_id', '=', 'salas.id')
             ->select('clases.*', 'actividades.nombre as actividad_nombre', 'salas.nombre as sala_nombre')
             ->where('monitor_id', $monitorId)
-            ->where('fecha_inicio', '>=', $desdeHoy) // <--- Ahora busca desde las 00:00 de hoy
+            ->where('fecha_inicio', '>=', $desdeHoy) 
             ->orderBy('fecha_inicio', 'asc')
             ->get();
 
-        // ... (El resto del código del método sigue igual: contar inscritos, etc.)
+        // Calcular porcentajes para la lista visual
         foreach ($clases as $clase) {
             $clase->inscritos = DB::table('reservas')->where('clase_id', $clase->id)->count();
             $clase->porcentaje = $clase->plazas_totales > 0 ? ($clase->inscritos / $clase->plazas_totales) * 100 : 0;
@@ -92,9 +100,30 @@ class MonitorController extends Controller
         $claseSeleccionada = null;
         $participantes = [];
 
+        // 2. GESTIÓN DE LA CLASE SELECCIONADA (Detalles derecha)
         if ($request->has('clase_id')) {
-            $claseSeleccionada = $clases->firstWhere('id', $request->get('clase_id'));
+            $idSolicitado = $request->get('clase_id');
+
+            // A) Primero intentamos encontrarla en la lista que ya hemos cargado (Optimización)
+            $claseSeleccionada = $clases->firstWhere('id', $idSolicitado);
             
+            // B) SI NO ESTÁ (porque es del pasado), hacemos una consulta específica para buscarla
+            if (!$claseSeleccionada) {
+                $claseSeleccionada = DB::table('clases')
+                    ->join('actividades', 'clases.actividad_id', '=', 'actividades.id')
+                    ->join('salas', 'clases.sala_id', '=', 'salas.id')
+                    ->select('clases.*', 'actividades.nombre as actividad_nombre', 'salas.nombre as sala_nombre')
+                    ->where('clases.id', $idSolicitado)
+                    ->where('monitor_id', $monitorId) // Seguridad: solo si es mía
+                    ->first();
+                
+                // Si la encontramos, calculamos sus inscritos manualmente
+                if ($claseSeleccionada) {
+                    $claseSeleccionada->inscritos = DB::table('reservas')->where('clase_id', $claseSeleccionada->id)->count();
+                }
+            }
+
+            // 3. Si hemos encontrado la clase (sea futura o pasada), sacamos los participantes
             if ($claseSeleccionada) {
                 $participantes = DB::table('reservas')
                     ->join('users', 'reservas.user_id', '=', 'users.id')
