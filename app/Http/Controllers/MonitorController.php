@@ -11,13 +11,18 @@ use Carbon\Carbon;
 class MonitorController extends Controller
 {
     // 1. VISTA CALENDARIO (Dashboard)
-    public function dashboard()
+    public function dashboard(Request $request)
     {
         $monitorId = Auth::id();
-        $inicioSemana = Carbon::now()->startOfWeek();
-        $finSemana = Carbon::now()->endOfWeek();
+        
+        // 1. Gestión de la semana (Offset)
+        // Si offset es 0, es la semana actual. Si es 1, es la siguiente, etc.
+        $offset = (int) $request->get('semana', 0); 
+        
+        $inicioSemana = Carbon::now()->startOfWeek()->addWeeks($offset);
+        $finSemana = $inicioSemana->copy()->endOfWeek();
 
-        // Obtenemos las clases de ESTA semana
+        // 2. Obtener Clases
         $clases = DB::table('clases')
             ->join('actividades', 'clases.actividad_id', '=', 'actividades.id')
             ->join('salas', 'clases.sala_id', '=', 'salas.id')
@@ -26,23 +31,39 @@ class MonitorController extends Controller
             ->whereBetween('fecha_inicio', [$inicioSemana, $finSemana])
             ->get();
 
-        // Estructura para el calendario (Lunes a Domingo, 07:00 a 22:00)
+        // 3. Estructura Calendario y Datos para la Cabecera
         $calendario = [];
+        $diasSemana = []; // Para poner "Lunes 12", "Martes 13"...
+
+        // Generamos los encabezados de los días
+        $tempDate = $inicioSemana->copy();
+        for ($i = 1; $i <= 7; $i++) {
+            $diasSemana[$i] = [
+                'nombre' => ucfirst($tempDate->translatedFormat('l')), // Lunes
+                'fecha' => $tempDate->format('d'), // 12
+                'es_hoy' => $tempDate->isToday()
+            ];
+            $tempDate->addDay();
+        }
+
+        // Rellenamos la matriz del calendario
         foreach ($clases as $clase) {
             $fecha = Carbon::parse($clase->fecha_inicio);
-            $diaSemana = $fecha->dayOfWeek; // 1 (Lunes) a 7 (Domingo)
+            $diaSemana = $fecha->dayOfWeekIso; // 1 (Lunes) a 7 (Domingo)
             $hora = $fecha->hour;
             
-            // Guardamos la clase en la posición exacta
+            // Calculamos inscritos para mostrar en el detalle
+            $clase->inscritos_count = DB::table('reservas')
+                ->where('clase_id', $clase->id)
+                ->count();
+
             $calendario[$hora][$diaSemana] = $clase;
         }
 
-        // Estadísticas simples para el footer del mockup
         $clasesSemanaCount = $clases->count();
         
-        return view('monitor.dashboard', compact('calendario', 'clasesSemanaCount'));
+        return view('monitor.dashboard', compact('calendario', 'clasesSemanaCount', 'inicioSemana', 'finSemana', 'offset', 'diasSemana'));
     }
-
     // 2. VISTA MIS ACTIVIDADES (Lista futura + Detalles)
     public function misActividades(Request $request)
     {
