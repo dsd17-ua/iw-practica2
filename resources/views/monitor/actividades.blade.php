@@ -3,17 +3,16 @@
 @section('title', 'Mis Actividades - Monitor')
 
 @section('content')
-<div class="min-h-screen bg-gray-50 pb-12 ">
+<div class="min-h-screen bg-gray-50 pb-12">
     
-    <div class="bg-green-600 px-6 py-4 text-white shadow-md">
-        <div class="mx-auto flex max-w-7xl items-center justify-between">
+    <div class="bg-green-600 shadow-md">
+        <div class="flex w-full items-center justify-between px-6 py-4 text-white">
             <h1 class="text-xl font-bold flex items-center gap-2">
                 FitZone Gym - Monitor
             </h1>
             
             <div class="flex items-center gap-4">
                 <span class="text-sm font-medium">Hola, {{ Auth::user()->nombre }}</span>
-                
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="flex items-center gap-1 text-sm bg-green-700 hover:bg-green-800 text-white px-3 py-1 rounded transition border border-green-500">
@@ -25,8 +24,9 @@
         </div>
     </div>
 
-    <div class="mx-auto max-w-7xl px-4 mt-6 flex gap-6">
-        <aside class="w-64 flex-shrink-0 space-y-2">
+    <div class="flex w-full gap-6 px-6 mt-6">
+        
+        <aside class="w-64 flex-shrink-0 space-y-2 hidden md:block">
             <a href="{{ route('monitor.dashboard') }}" class="block rounded-lg bg-white px-4 py-3 font-medium text-gray-600 hover:bg-gray-50 hover:text-green-600 shadow-sm">
                 📅 Mi Calendario
             </a>
@@ -53,8 +53,8 @@
                                 <h3 class="font-bold text-gray-900">{{ $clase->actividad_nombre }}</h3>
                                 <p class="text-sm text-green-600 font-medium">{{ $clase->sala_nombre }}</p>
                             </div>
-                            <span class="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-1 rounded">
-                                {{ \Carbon\Carbon::parse($clase->fecha_inicio)->format('d/m - H:i') }}
+                            <span class="text-xs font-bold bg-gray-100 text-gray-600 px-2 py-1 rounded capitalize">
+                                {{ \Carbon\Carbon::parse($clase->fecha_inicio)->translatedFormat('d M - H:i') }}
                             </span>
                         </div>
 
@@ -69,7 +69,7 @@
                         </div>
                     </a>
                 @empty
-                    <div class="p-8 text-center bg-white rounded-xl shadow-sm">
+                    <div class="p-8 text-center bg-white rounded-xl shadow-sm border border-gray-200">
                         <p class="text-gray-500">No tienes clases futuras asignadas.</p>
                     </div>
                 @endforelse
@@ -77,7 +77,7 @@
 
             <div class="w-96">
                 @if ($claseSeleccionada)
-                    <div class="rounded-xl bg-white p-6 shadow-sm sticky top-24 border border-gray-200">
+                    <div class="rounded-xl bg-white p-6 shadow-sm sticky top-6 border border-gray-200">
                         <h3 class="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Detalles de la Clase</h3>
                         
                         <div class="space-y-3 mb-6">
@@ -87,8 +87,8 @@
                             </div>
                             <div>
                                 <span class="block text-xs text-gray-500">Horario</span>
-                                <span class="font-medium text-gray-800">
-                                    {{ \Carbon\Carbon::parse($claseSeleccionada->fecha_inicio)->format('l d, H:i') }}
+                                <span class="font-medium text-gray-800 capitalize">
+                                    {{ \Carbon\Carbon::parse($claseSeleccionada->fecha_inicio)->translatedFormat('l d F, H:i') }}
                                 </span>
                             </div>
                             <div>
@@ -98,9 +98,9 @@
                         </div>
 
                         <h4 class="font-semibold text-gray-900 mb-3 text-sm">Participantes Inscritos</h4>
-                        <div class="space-y-2 max-h-60 overflow-y-auto">
+                        <div class="space-y-2 max-h-96 overflow-y-auto">
                             @forelse ($participantes as $participante)
-                                <div class="flex items-center gap-3 p-2 rounded bg-gray-50">
+                                <div class="flex items-center gap-3 p-2 rounded bg-gray-50 border border-gray-100">
                                     <div class="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-bold text-xs">
                                         {{ substr($participante->nombre, 0, 1) }}
                                     </div>
@@ -110,14 +110,16 @@
                                     </div>
                                 </div>
                             @empty
-                                <p class="text-sm text-gray-500 italic">Aún no hay inscritos.</p>
+                                <div class="text-center py-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
+                                    <p class="text-sm text-gray-500 italic">Aún no hay nadie apuntado.</p>
+                                </div>
                             @endforelse
                         </div>
                     </div>
                 @else
-                    <div class="rounded-xl bg-gray-50 border-2 border-dashed border-gray-200 p-12 text-center h-full flex flex-col items-center justify-center text-gray-400">
+                    <div class="rounded-xl bg-gray-50 border-2 border-dashed border-gray-200 p-12 text-center h-full flex flex-col items-center justify-center text-gray-400 sticky top-6">
                         <svg class="w-12 h-12 mb-2 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
-                        <p>Selecciona una clase de la izquierda para ver los detalles y participantes.</p>
+                        <p class="text-sm">Selecciona una clase de la izquierda para ver los detalles.</p>
                     </div>
                 @endif
             </div>
