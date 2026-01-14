@@ -11,92 +11,182 @@ class DatosGimnasioSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Salas
-        $salaSpinning = DB::table('salas')->insertGetId([
-            'nombre' => 'Sala Spinning', 'aforo_maximo' => 20, 'created_at' => now(), 'updated_at' => now()
-        ]);
-        $salaMusculacion = DB::table('salas')->insertGetId([
-            'nombre' => 'Sala Musculación', 'aforo_maximo' => 30, 'created_at' => now(), 'updated_at' => now()
-        ]);
-        $salaYoga = DB::table('salas')->insertGetId([
-            'nombre' => 'Sala Yoga', 'aforo_maximo' => 15, 'created_at' => now(), 'updated_at' => now()
-        ]);
+        // ==========================================
+        // 1. SALAS
+        // ==========================================
+        $salas = [
+            ['nombre' => 'Sala Spinning', 'aforo_maximo' => 20],
+            ['nombre' => 'Sala Musculación', 'aforo_maximo' => 30],
+            ['nombre' => 'Sala Yoga/Pilates', 'aforo_maximo' => 15],
+            ['nombre' => 'Sala Polivalente', 'aforo_maximo' => 25],
+        ];
 
+        $salaIds = [];
+        foreach ($salas as $sala) {
+            $salaIds[$sala['nombre']] = DB::table('salas')->insertGetId(array_merge($sala, [
+                'created_at' => now(), 'updated_at' => now()
+            ]));
+        }
+
+        // ==========================================
+        // 2. ACTIVIDADES
+        // ==========================================
+        $actividades = [
+            ['nombre' => 'Spinning', 'img' => 'https://images.unsplash.com/photo-1625594755684-a73285a64f66?auto=format&fit=crop&w=1200&q=80', 'desc' => 'Cardio intenso en bicicleta.'],
+            ['nombre' => 'Musculación', 'img' => 'https://images.unsplash.com/photo-1632077804406-188472f1a810?auto=format&fit=crop&w=1200&q=80', 'desc' => 'Entrenamiento de fuerza.'],
+            ['nombre' => 'Crossfit', 'img' => 'https://images.unsplash.com/photo-1639504031765-ca21aecb7252?auto=format&fit=crop&w=1200&q=80', 'desc' => 'Alta intensidad funcional.'],
+            ['nombre' => 'Yoga', 'img' => 'https://images.unsplash.com/photo-1616940779493-6958fbd615fe?auto=format&fit=crop&w=1200&q=80', 'desc' => 'Equilibrio y flexibilidad.'],
+            ['nombre' => 'Pilates', 'img' => 'https://images.unsplash.com/photo-1518611012118-696072aa579a?auto=format&fit=crop&w=1200&q=80', 'desc' => 'Control postural y fuerza.'],
+            ['nombre' => 'Zumba', 'img' => 'https://images.unsplash.com/photo-1524594152303-9fd13543fe6e?auto=format&fit=crop&w=1200&q=80', 'desc' => 'Baile y cardio divertido.'],
+        ];
+
+        $actIds = [];
+        foreach ($actividades as $act) {
+            $actIds[$act['nombre']] = DB::table('actividades')->insertGetId([
+                'nombre' => $act['nombre'],
+                'descripcion' => $act['desc'],
+                'imagen_url' => $act['img'],
+                'created_at' => now(), 'updated_at' => now()
+            ]);
+        }
+
+        // ==========================================
+        // 3. USUARIOS (Staff y Socios)
+        // ==========================================
         
-
-        // 2. Actividades
-        $actSpinning = DB::table('actividades')->insertGetId([
-            'nombre' => 'Spinning',
-            'descripcion' => 'Actividad de spinning en sala especializada',
-            'imagen_url' => 'https://images.unsplash.com/photo-1625594755684-a73285a64f66?auto=format&fit=crop&w=1200&q=80', 
+        // A. Webmaster / Admin
+        DB::table('users')->insert([
+            'nombre' => 'Admin Boss',
+            'email' => 'admin@admin.com',
+            'password' => Hash::make('1234'),
+            'rol' => 'admin', // Asegúrate de que tu enum permita 'admin' o 'webmaster'
+            'estado' => 'activo',
             'created_at' => now(), 'updated_at' => now()
         ]);
 
-        DB::table('actividades')->insert([
-            'nombre' => 'Musculación',
-            'descripcion' => 'Entrenamiento de fuerza en sala de musculación',
-            'imagen_url' => 'https://images.unsplash.com/photo-1632077804406-188472f1a810?auto=format&fit=crop&w=1200&q=80', 
-            'created_at' => now(), 'updated_at' => now()
+        // B. Monitores
+        $monitorAnaId = DB::table('users')->insertGetId([
+            'nombre' => 'Ana (Monitora)', 'email' => 'ana@monitor.com', 'password' => Hash::make('1234'),
+            'rol' => 'monitor', 'estado' => 'activo', 'created_at' => now(), 'updated_at' => now()
         ]);
-
-        DB::table('actividades')->insert([
-            'nombre' => 'Crossfit',
-            'descripcion' => 'Entrenamiento funcional de alta intensidad',
-            'imagen_url' => 'https://images.unsplash.com/photo-1639504031765-ca21aecb7252?auto=format&fit=crop&w=1200&q=80', 
-            'created_at' => now(), 'updated_at' => now()
-        ]);
-
-        DB::table('actividades')->insert([
-            'nombre' => 'Yoga',
-            'descripcion' => 'Sesiones de yoga para mejorar flexibilidad y relajación',
-            'imagen_url' => 'https://images.unsplash.com/photo-1616940779493-6958fbd615fe?auto=format&fit=crop&w=1200&q=80', 
-            'created_at' => now(), 'updated_at' => now()
-        ]);
-
-        // 3. Usuarios: Un MONITOR y un SOCIO
-        $monitorId = DB::table('users')->insertGetId([
-            'nombre' => 'Ana', 'email' => 'ana@monitor.com', 'password' => Hash::make('1234'),
+        
+        $monitorCarlosId = DB::table('users')->insertGetId([
+            'nombre' => 'Carlos (Monitor)', 'email' => 'carlos@monitor.com', 'password' => Hash::make('1234'),
             'rol' => 'monitor', 'estado' => 'activo', 'created_at' => now(), 'updated_at' => now()
         ]);
 
-        // SOCIO DE PRUEBA (Para el endpoint 4.3)
-        $socioId = DB::table('users')->insertGetId([
-            'nombre' => 'Pepe', 
-            'email' => 'pepe@socio.com', // <--- USAREMOS ESTE EMAIL
-            'dni' => '12345678X',
-            'password' => Hash::make('1234'),
-            'rol' => 'socio', 
-            'estado' => 'activo',
-            'plan_id' => 1, // Asumimos que el plan 1 existe (Plan Básico)
-            'created_at' => Carbon::parse('2023-01-01'), // Antigüedad falsa
-            'updated_at' => now()
+        // C. Socios
+        $sociosIds = [];
+
+        // Pepe
+        $sociosIds[] = DB::table('users')->insertGetId([
+            'nombre' => 'Pepe Socio', 'email' => 'pepe@socio.com', 'dni' => '12345678X',
+            'password' => Hash::make('1234'), 'rol' => 'socio', 'estado' => 'activo',
+            'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
         ]);
 
-        // 4. Clases: Una para HOY AHORA MISMO (Para probar aforo)
-        // Calculamos la hora actual y la siguiente
-        $inicio = now(); 
-        $fin = now()->addHour();
-
-        $claseId = DB::table('clases')->insertGetId([
-            'actividad_id' => $actSpinning,
-            'sala_id' => $salaSpinning,
-            'monitor_id' => $monitorId,
-            'fecha_inicio' => $inicio,
-            'fecha_fin' => $fin,
-            'plazas_totales' => 20,
-            'estado' => 'programada',
-            'created_at' => now(), 'updated_at' => now()
-        ]);
-
-        // Creamos 15 reservas falsas para esa clase (Para que el aforo no de 0)
-        for ($i = 0; $i < 15; $i++) {
-            DB::table('reservas')->insert([
-                'user_id' => $socioId,
-                'clase_id' => $claseId,
-                'fecha_reserva' => now(),
-                'estado' => 'confirmada',
+        // 10 socios aleatorios
+        $nombres = ['Lucía', 'Marcos', 'Elena', 'Javier', 'Sofía', 'Daniel', 'Paula', 'Diego', 'Carmen', 'Roberto'];
+        foreach ($nombres as $index => $nombre) {
+            $sociosIds[] = DB::table('users')->insertGetId([
+                'nombre' => $nombre . ' García',
+                'email' => strtolower($nombre) . $index . '@mail.com',
+                'dni' => '000000' . $index . 'X',
+                'password' => Hash::make('1234'),
+                'rol' => 'socio',
+                'estado' => 'activo',
+                'plan_id' => rand(1, 2),
                 'created_at' => now(), 'updated_at' => now()
             ]);
+        }
+
+        // ==========================================
+        // 4. GENERACIÓN DE CLASES (Horario)
+        // ==========================================
+        
+        // Helper para crear clases rápido
+        $crearClase = function($actId, $salaId, $monitorId, $fechaInicio, $sociosDisponibles) {
+            $fechaFin = (clone $fechaInicio)->addHour();
+            $estado = $fechaInicio->isPast() ? 'finalizada' : 'programada';
+
+            $claseId = DB::table('clases')->insertGetId([
+                'actividad_id' => $actId,
+                'sala_id' => $salaId,
+                'monitor_id' => $monitorId,
+                'fecha_inicio' => $fechaInicio,
+                'fecha_fin' => $fechaFin,
+                'plazas_totales' => 20,
+                'estado' => $estado,
+                'created_at' => now(), 'updated_at' => now()
+            ]);
+
+            // Crear reservas aleatorias
+            $numAsistentes = rand(3, 15);
+            $asistentes = collect($sociosDisponibles)->random(min($numAsistentes, count($sociosDisponibles)));
+
+            foreach ($asistentes as $socioId) {
+                DB::table('reservas')->insert([
+                    'user_id' => $socioId,
+                    'clase_id' => $claseId,
+                    'fecha_reserva' => now(),
+                    'estado' => 'confirmada',
+                    'created_at' => now(), 'updated_at' => now()
+                ]);
+            }
+        };
+
+        // --- A. Clases del PASADO (Histórico) ---
+        $crearClase($actIds['Spinning'], $salaIds['Sala Spinning'], $monitorAnaId, Carbon::now()->subDays(2)->setHour(10), $sociosIds);
+        $crearClase($actIds['Yoga'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, Carbon::now()->subDays(2)->setHour(18), $sociosIds);
+        $crearClase($actIds['Crossfit'], $salaIds['Sala Polivalente'], $monitorCarlosId, Carbon::now()->subDays(1)->setHour(19), $sociosIds);
+
+        // --- B. Clases de HOY ---
+        $crearClase($actIds['Pilates'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, Carbon::now()->startOfDay()->setHour(9), $sociosIds); // Mañana
+        $crearClase($actIds['Spinning'], $salaIds['Sala Spinning'], $monitorAnaId, Carbon::now()->addMinutes(30), $sociosIds); // Inminente
+        $crearClase($actIds['Zumba'], $salaIds['Sala Polivalente'], $monitorAnaId, Carbon::now()->startOfDay()->setHour(20), $sociosIds); // Tarde
+
+        // --- C. Clases Mañana y Pasado (Cercanas) ---
+        $crearClase($actIds['Musculación'], $salaIds['Sala Musculación'], $monitorCarlosId, Carbon::now()->addDay()->setHour(10), $sociosIds);
+        $crearClase($actIds['Yoga'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, Carbon::now()->addDay()->setHour(17), $sociosIds);
+        $crearClase($actIds['Spinning'], $salaIds['Sala Spinning'], $monitorAnaId, Carbon::now()->addDays(2)->setHour(18), $sociosIds);
+        $crearClase($actIds['Crossfit'], $salaIds['Sala Polivalente'], $monitorCarlosId, Carbon::now()->addDays(2)->setHour(19), $sociosIds);
+
+        // --- D. RUTINA SEMANAL (PRÓXIMAS 4 SEMANAS) ---
+        // Generamos clases automáticas para rellenar el calendario futuro
+        $fechaBase = Carbon::now()->startOfWeek(); // Empezamos a contar desde el lunes de esta semana
+
+        // Repetimos la rutina durante 4 semanas hacia adelante
+        for ($semana = 1; $semana <= 4; $semana++) {
+            
+            // Calculamos el lunes de la semana "N"
+            $lunesSemana = (clone $fechaBase)->addWeeks($semana);
+
+            // LUNES: Spinning (18:00) - Ana
+            $crearClase($actIds['Spinning'], $salaIds['Sala Spinning'], $monitorAnaId, 
+                (clone $lunesSemana)->setHour(18)->setMinute(0), $sociosIds);
+
+            // MARTES: Pilates (09:00) - Ana y Crossfit (19:00) - Carlos
+            $crearClase($actIds['Pilates'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, 
+                (clone $lunesSemana)->addDays(1)->setHour(9)->setMinute(0), $sociosIds);
+            
+            $crearClase($actIds['Crossfit'], $salaIds['Sala Polivalente'], $monitorCarlosId, 
+                (clone $lunesSemana)->addDays(1)->setHour(19)->setMinute(0), $sociosIds);
+
+            // MIÉRCOLES: Yoga (10:00) - Ana
+            $crearClase($actIds['Yoga'], $salaIds['Sala Yoga/Pilates'], $monitorAnaId, 
+                (clone $lunesSemana)->addDays(2)->setHour(10)->setMinute(0), $sociosIds);
+
+            // JUEVES: Musculación Dirigida (11:00) - Carlos
+            $crearClase($actIds['Musculación'], $salaIds['Sala Musculación'], $monitorCarlosId, 
+                (clone $lunesSemana)->addDays(3)->setHour(11)->setMinute(0), $sociosIds);
+
+            // VIERNES: Zumba Party (17:00) - Ana
+            $crearClase($actIds['Zumba'], $salaIds['Sala Polivalente'], $monitorAnaId, 
+                (clone $lunesSemana)->addDays(4)->setHour(17)->setMinute(0), $sociosIds);
+            
+            // SÁBADO: Crossfit Matinal (10:00) - Carlos
+            $crearClase($actIds['Crossfit'], $salaIds['Sala Polivalente'], $monitorCarlosId, 
+                (clone $lunesSemana)->addDays(5)->setHour(10)->setMinute(0), $sociosIds);
         }
     }
 }

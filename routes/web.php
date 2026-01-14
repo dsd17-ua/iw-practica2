@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\Http\Controllers\MonitorController;
 
 Route::get('/', function () {
     if (Auth::check()) {
@@ -84,17 +85,33 @@ Route::post('/logout', function (Request $request) {
     return redirect('/');
 })->name('logout');
 
+// --------------------------------------------------------------------------
+// RUTAS PRIVADAS
+// --------------------------------------------------------------------------
+
 // Rutas del socio
 Route::get('/socio/dashboard', function () {
     return view('socio.dashboard');
-})->name('socio.dashboard')->middleware('auth', 'role:socio');
+})->name('socio.dashboard')->middleware(['auth', 'role:socio']);
 
 // Rutas del webmaster
 Route::get('/webmaster/dashboard', function () {
     return view('webmaster.dashboard');
-})->name('webmaster.dashboard')->middleware('auth', 'role:webmaster');
+})->name('webmaster.dashboard')->middleware(['auth', 'role:webmaster']);
 
-// Rutas del monitor
-Route::get('/monitor/dashboard', function () {
-    return view('monitor.dashboard');
-})->name('monitor.dashboard')->middleware('auth', 'role:monitor');
+// Rutas del MONITOR
+// Agrupamos todas las rutas del monitor para aplicar el middleware de golpe
+Route::middleware(['auth', 'role:monitor'])->group(function () {
+    
+    // 1. Calendario (Dashboard)
+    Route::get('/monitor/dashboard', [MonitorController::class, 'dashboard'])
+        ->name('monitor.dashboard');
+    
+    // 2. Mis Actividades (Próximas + Detalles)
+    Route::get('/monitor/actividades', [MonitorController::class, 'misActividades'])
+        ->name('monitor.actividades');
+    
+    // 3. Histórico (Clases pasadas)
+    Route::get('/monitor/historico', [MonitorController::class, 'historico'])
+        ->name('monitor.historico');
+});
