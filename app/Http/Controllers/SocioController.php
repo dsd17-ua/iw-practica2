@@ -15,18 +15,46 @@ class SocioController extends Controller
         $actividadesDisponibles = DB::table('actividades')->orderBy('nombre')->get();
 
         // Obtener las clases disponibles y poner su disponibilidad.
-        // Ordenar por tipo de actividad para poder filtrar en la vista
+        // Ordenar por fecha
+        $listadoActividades = DB::table('clases')
+            ->join('actividades', 'clases.actividad_id', '=', 'actividades.id')
+            ->leftJoin('salas', 'clases.sala_id', '=', 'salas.id')
+            ->leftJoin('users as monitor', 'clases.monitor_id', '=', 'monitor.id')
+            ->where('clases.fecha_inicio', '>', now())
+            ->whereRaw('clases.asistencia_actual < clases.plazas_totales')
+            ->orderBy('clases.fecha_inicio', 'asc')
+            ->select(
+                'clases.*',
+                'actividades.nombre as actividad_nombre',
+                'clases.coste_extra as clase_precio',
+                'salas.nombre as sala_nombre',
+                DB::raw("CONCAT(monitor.nombre, ' ', COALESCE(monitor.apellidos, '')) as monitor_nombre")
+            )
+            ->get();
 
-        return view('socio.actividades', compact('actividadesDisponibles'));
+        return view('socio.actividades', compact('actividadesDisponibles', 'listadoActividades'));
     }
 
     public function reservarActividad(Request $request, $claseId)
     {
         $usuario = Auth::user();
 
+        // Verificar si el usuario puede gastar una clase gratuita
+        $claseGratuitaDisponible = DB::table('reservas')
+            ->where('user_id', $usuario->id)
+            ->where('uso_clase_gratuita', true)
+            ->where('estado', 'asistida')
+            ->count() < DB::table('planes')
+                ->where('id', $usuario->plan_id)
+                ->value('clases_gratis_incluidas');
+
         // Verificar si el usuario tiene saldo suficiente si no usa clase gratuita
-        if (!$request->input('uso_clase_gratuita') && $request->input('precio_pagado') > $usuario->saldo_actual) {
-            return redirect()->route('socio.reservas')->with('error', 'Saldo insuficiente para reservar esta actividad.');
+        if (!$claseGratuitaDisponible) {
+            $saldoUsuario = DB::table('users')->where('id', $usuario->id)->value('saldo_actual');
+            $precioClase = DB::table('clases')->where('id', $claseId)->value('coste_extra');
+            if ($saldoUsuario < $precioClase) {
+                return back()->with('error', 'Saldo insuficiente para reservar esta actividad.');
+            }
         }
 
         // Actualizar el saldo del usuario si paga por la clase
@@ -41,10 +69,15 @@ class SocioController extends Controller
             'fecha_reserva' => now(),
             'uso_clase_gratuita' => $request->input('uso_clase_gratuita', false),
             'precio_pagado' => $request->input('precio_pagado', 0),
-            'estado' => 'reservada',
+            'estado' => 'confirmada',
             'created_at' => now(),
             'updated_at' => now()
         ]);
+
+        // Actualizar el aforo actual de la clase
+        DB::table('clases')
+            ->where('id', $claseId)
+            ->increment('asistencia_actual');
 
         return redirect()->route('socio.reservas')->with('success', 'Actividad reservada correctamente.');
     }
@@ -103,6 +136,11 @@ class SocioController extends Controller
                 'estado' => 'cancelada',
                 'updated_at' => now()
             ]);
+        
+        // Actualizar el aforo actual de la clase
+        DB::table('clases')
+            ->where('id', $reserva->clase_id)
+            ->decrement('asistencia_actual');
 
         // Reembolso del importe al saldo del socio
         if ($reserva->precio_pagado > 0) {
