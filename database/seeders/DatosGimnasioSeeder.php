@@ -109,20 +109,22 @@ class DatosGimnasioSeeder extends Seeder
             $fechaFin = (clone $fechaInicio)->addHour();
             $estado = $fechaInicio->isPast() ? 'finalizada' : 'programada';
 
+            $maximoAforo = DB::table('salas')->where('id', $salaId)->value('aforo_maximo');
+
             $claseId = DB::table('clases')->insertGetId([
                 'actividad_id' => $actId,
                 'sala_id' => $salaId,
                 'monitor_id' => $monitorId,
                 'fecha_inicio' => $fechaInicio,
                 'fecha_fin' => $fechaFin,
-                'plazas_totales' => 20,
+                'plazas_totales' => $maximoAforo,
                 'asistencia_actual' => 0,
                 'estado' => $estado,
                 'created_at' => now(), 'updated_at' => now()
             ]);
 
             // Crear reservas aleatorias
-            $numAsistentes = rand(3, 15);
+            $numAsistentes = rand(3, $maximoAforo - 1);
             $asistentes = collect($sociosDisponibles)->random(min($numAsistentes, count($sociosDisponibles)));
 
             foreach ($asistentes as $socioId) {
