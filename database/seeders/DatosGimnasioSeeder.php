@@ -116,6 +116,7 @@ class DatosGimnasioSeeder extends Seeder
                 'fecha_inicio' => $fechaInicio,
                 'fecha_fin' => $fechaFin,
                 'plazas_totales' => 20,
+                'asistencia_actual' => 0,
                 'estado' => $estado,
                 'created_at' => now(), 'updated_at' => now()
             ]);
@@ -132,6 +133,10 @@ class DatosGimnasioSeeder extends Seeder
                     'estado' => 'confirmada',
                     'created_at' => now(), 'updated_at' => now()
                 ]);
+
+                DB::table('clases')
+                    ->where('id', $claseId)
+                    ->increment('asistencia_actual');
             }
         };
 
