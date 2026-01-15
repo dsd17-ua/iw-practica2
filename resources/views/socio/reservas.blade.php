@@ -6,7 +6,7 @@
 
 @section('content')
 <div class="min-h-screen bg-gray-50" style="padding-top: 3rem;">
-    <div class="mx-auto flex w-full max-w-7xl gap-6 px-4 py-6">
+    <div class="mx-auto flex w-full max-w-[90rem] gap-6 px-2 py-6 md:px-4">
         <aside class="w-full max-w-xs rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
             <nav class="space-y-2 text-sm text-gray-700">
                 <a href="{{ route('socio.actividades') }}" class="flex w-full items-center gap-3 rounded-lg px-3 py-2 hover:bg-gray-100">
@@ -227,3 +227,4 @@
     });
 </script>
 @endsection
+
