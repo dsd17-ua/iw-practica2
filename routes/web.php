@@ -11,7 +11,7 @@ Route::get('/', function () {
     if (Auth::check()) {
         $user = Auth::user();
         if ($user->rol === 'socio') {
-            return redirect()->route('socio.dashboard');
+            return redirect()->route('socio.actividades');
         } elseif ($user->rol === 'webmaster') {
             return redirect()->route('webmaster.dashboard');
         } elseif ($user->rol === 'monitor') {
@@ -90,9 +90,28 @@ Route::post('/logout', function (Request $request) {
 // --------------------------------------------------------------------------
 
 // Rutas del socio
-Route::get('/socio/dashboard', function () {
-    return view('socio.dashboard');
-})->name('socio.dashboard')->middleware(['auth', 'role:socio']);
+
+Route::middleware(['auth', 'role:socio'])->group(function () {
+    // 1. Actividades
+    Route::get('/socio/actividades', [App\Http\Controllers\SocioController::class, 'getActividades'])->name('socio.actividades');
+    
+    // 2. Reservas
+    Route::get('/socio/reservas', [App\Http\Controllers\SocioController::class, 'getReservas'])->name('socio.reservas');
+    Route::post('/socio/reservas/{claseId}/reservar', [App\Http\Controllers\SocioController::class, 'reservarActividad'])->name('socio.reservas.reservar');
+    Route::post('/socio/reservas/{reservaId}/cancelar', [App\Http\Controllers\SocioController::class, 'cancelarReserva'])->name('socio.reservas.cancelar');
+    
+    // 3. Saldo
+    Route::get('/socio/saldo', [App\Http\Controllers\SocioController::class, 'getSaldo'])->name('socio.saldo');
+    
+    // 4. Perfil
+    Route::get('/socio/perfil', [App\Http\Controllers\SocioController::class, 'getPerfil'])->name('socio.perfil');
+    
+    // 5. Tienda
+    Route::get('/socio/tienda', [App\Http\Controllers\SocioController::class, 'getTienda'])->name('socio.tienda');
+    
+    // 6. Plan
+    Route::get('/socio/plan', [App\Http\Controllers\SocioController::class, 'getPlan'])->name('socio.plan');
+});
 
 // Rutas del webmaster
 Route::get('/webmaster/dashboard', function () {
@@ -102,7 +121,6 @@ Route::get('/webmaster/dashboard', function () {
 // Rutas del MONITOR
 // Agrupamos todas las rutas del monitor para aplicar el middleware de golpe
 Route::middleware(['auth', 'role:monitor'])->group(function () {
-    
     // 1. Calendario (Dashboard)
     Route::get('/monitor/dashboard', [MonitorController::class, 'dashboard'])
         ->name('monitor.dashboard');
