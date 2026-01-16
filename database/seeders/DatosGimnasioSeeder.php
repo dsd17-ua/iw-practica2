@@ -94,6 +94,8 @@ class DatosGimnasioSeeder extends Seeder
             'direccion' => 'Calle Sol 15',
             'ciudad' => 'Granada',
             'codigo_postal' => '18002',
+            'numero_socio' => 'FZG-' . substr(hash('sha256', 'pepe@socio.com'), 0, 20),
+            'proxima_renovacion' => now()->addMonth(),
             'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
         ]);
 
@@ -123,6 +125,8 @@ class DatosGimnasioSeeder extends Seeder
                 'rol' => 'socio',
                 'estado' => 'activo',
                 'plan_id' => rand(1, 2),
+                'numero_socio' => 'FZG-' . substr(hash('sha256', strtolower($nombre) . $index . '@mail.com'), 0, 20),
+                'proxima_renovacion' => now()->addMonth(),
                 'created_at' => now(), 'updated_at' => now()
             ]);
         }

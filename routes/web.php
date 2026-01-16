@@ -148,6 +148,8 @@ Route::middleware(['auth', 'role:socio'])->group(function () {
     
     // 4. Perfil
     Route::get('/socio/perfil', [App\Http\Controllers\SocioController::class, 'getPerfil'])->name('socio.perfil');
+    Route::post('/socio/perfil', [App\Http\Controllers\SocioController::class, 'updatePerfil'])->name('socio.perfil.update');
+    Route::post('/socio/perfil/password', [App\Http\Controllers\SocioController::class, 'updatePassword'])->name('socio.perfil.password');
     
     // 5. Tienda
     Route::get('/socio/tienda', [App\Http\Controllers\SocioController::class, 'getTienda'])->name('socio.tienda');

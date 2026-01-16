@@ -7,6 +7,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 
 class SocioController extends Controller
 {
@@ -229,9 +230,81 @@ class SocioController extends Controller
     {
         $usuario = Auth::user();
 
+        // Actualizar la fecha de la proxima renovación del plan si es necesario (va por meses desde la creacion de usuario)
+        DB::table('users')
+            ->where('id', $usuario->id)
+            ->update([
+                'proxima_renovacion' => DB::raw("DATE_ADD(created_at, INTERVAL TIMESTAMPDIFF(MONTH, created_at, NOW()) + 1 MONTH)"),
+                'updated_at' => now()
+            ]);
 
+        $userDB = DB::table('users')
+            ->where('id', $usuario->id)
+            ->get();
 
-        return view('socio.perfil');
+        return view('socio.perfil', compact('usuario'));
+    }
+
+    public function updatePerfil(Request $request)
+    {
+        $usuario = Auth::user();
+
+        $validated = $request->validate([
+            'nombre' => ['required', 'string', 'max:100'],
+            'apellidos' => ['nullable', 'string', 'max:150'],
+            'email' => ['required', 'email', 'max:255', 'unique:users,email,' . $usuario->id],
+            'telefono' => ['nullable', 'string', 'max:30'],
+            'direccion' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $fields = ['nombre', 'apellidos', 'email', 'telefono', 'direccion'];
+        $updates = [];
+
+        foreach ($fields as $field) {
+            $value = $validated[$field] ?? null;
+            if ($value === '') {
+                $value = null;
+            }
+
+            if ($usuario->{$field} !== $value) {
+                $updates[$field] = $value;
+            }
+        }
+
+        if (empty($updates)) {
+            return back()->with('success', 'No hay cambios para guardar.');
+        }
+
+        $updates['updated_at'] = now();
+
+        DB::table('users')
+            ->where('id', $usuario->id)
+            ->update($updates);
+
+        return back()->with('success', 'Datos actualizados correctamente.');
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $usuario = Auth::user();
+
+        $validated = $request->validate([
+            'current_password' => ['required'],
+            'password' => ['required', 'string', 'confirmed'],
+        ]);
+
+        if (!Hash::check($validated['current_password'], $usuario->password)) {
+            return back()->withErrors(['current_password' => 'La contrasena actual no es correcta.']);
+        }
+
+        DB::table('users')
+            ->where('id', $usuario->id)
+            ->update([
+                'password' => Hash::make($validated['password']),
+                'updated_at' => now(),
+            ]);
+
+        return back()->with('success', 'Contrasena actualizada correctamente.');
     }
 
     public function getTienda(Request $request)
