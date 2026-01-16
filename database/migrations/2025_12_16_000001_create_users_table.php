@@ -25,9 +25,12 @@ return new class extends Migration
             $table->string('telefono')->nullable();
             $table->string('dni')->unique()->nullable();
             $table->date('fecha_nacimiento')->nullable();
+            $table->string('direccion')->nullable();
+            $table->string('ciudad')->nullable();
+            $table->string('codigo_postal')->nullable();
             
             // Usamos enum para restringir los valores como pedía el diagrama
-            $table->enum('rol', ['socio', 'admin', 'monitor'])->default('socio');
+            $table->enum('rol', ['socio', 'webmaster', 'monitor'])->default('socio');
             $table->enum('estado', ['pendiente', 'activo', 'bloqueado'])->default('pendiente');
             
             $table->decimal('saldo_actual', 10, 2)->default(0.00);

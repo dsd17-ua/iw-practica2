@@ -21,7 +21,7 @@
         </nav>
 
         <div class="flex items-center justify-end gap-3">
-            <a href="#" class="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Hazte Socio</a>
+            <a href="{{ route('register') }}" class="rounded-full bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Hazte Socio</a>
             <a href="{{ route('login') }}" class="rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-gray-200">Acceder</a>
         </div>
     </div>
