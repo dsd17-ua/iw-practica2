@@ -59,7 +59,10 @@ class DatosGimnasioSeeder extends Seeder
             'nombre' => 'Admin Boss',
             'email' => 'admin@admin.com',
             'password' => Hash::make('1234'),
-            'rol' => 'admin', // Asegúrate de que tu enum permita 'admin' o 'webmaster'
+            'direccion' => 'Avenida Central 100',
+            'ciudad' => 'Madrid',
+            'codigo_postal' => '28013',
+            'rol' => 'webmaster',
             'estado' => 'activo',
             'created_at' => now(), 'updated_at' => now()
         ]);
@@ -67,11 +70,17 @@ class DatosGimnasioSeeder extends Seeder
         // B. Monitores
         $monitorAnaId = DB::table('users')->insertGetId([
             'nombre' => 'Ana (Monitora)', 'email' => 'ana@monitor.com', 'password' => Hash::make('1234'),
+            'direccion' => 'Calle del Rio 22',
+            'ciudad' => 'Sevilla',
+            'codigo_postal' => '41001',
             'rol' => 'monitor', 'estado' => 'activo', 'created_at' => now(), 'updated_at' => now()
         ]);
         
         $monitorCarlosId = DB::table('users')->insertGetId([
             'nombre' => 'Carlos (Monitor)', 'email' => 'carlos@monitor.com', 'password' => Hash::make('1234'),
+            'direccion' => 'Plaza Norte 7',
+            'ciudad' => 'Valencia',
+            'codigo_postal' => '46002',
             'rol' => 'monitor', 'estado' => 'activo', 'created_at' => now(), 'updated_at' => now()
         ]);
 
@@ -82,17 +91,35 @@ class DatosGimnasioSeeder extends Seeder
         $sociosIds[] = DB::table('users')->insertGetId([
             'nombre' => 'Pepe Socio', 'email' => 'pepe@socio.com', 'dni' => '12345678X',
             'password' => Hash::make('1234'), 'rol' => 'socio', 'estado' => 'activo',
+            'direccion' => 'Calle Sol 15',
+            'ciudad' => 'Granada',
+            'codigo_postal' => '18002',
             'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
         ]);
 
         // 10 socios aleatorios
         $nombres = ['Lucía', 'Marcos', 'Elena', 'Javier', 'Sofía', 'Daniel', 'Paula', 'Diego', 'Carmen', 'Roberto'];
+        $direcciones = [
+            ['direccion' => 'Calle Luna 3', 'ciudad' => 'Bilbao', 'codigo_postal' => '48001'],
+            ['direccion' => 'Avenida Mar 44', 'ciudad' => 'Malaga', 'codigo_postal' => '29001'],
+            ['direccion' => 'Calle Norte 18', 'ciudad' => 'Zaragoza', 'codigo_postal' => '50001'],
+            ['direccion' => 'Calle Prado 9', 'ciudad' => 'Toledo', 'codigo_postal' => '45001'],
+            ['direccion' => 'Avenida Sur 27', 'ciudad' => 'Murcia', 'codigo_postal' => '30001'],
+            ['direccion' => 'Calle Olivo 52', 'ciudad' => 'Valladolid', 'codigo_postal' => '47001'],
+            ['direccion' => 'Calle Sierra 6', 'ciudad' => 'Santander', 'codigo_postal' => '39001'],
+            ['direccion' => 'Plaza Mayor 1', 'ciudad' => 'Salamanca', 'codigo_postal' => '37001'],
+            ['direccion' => 'Avenida Lago 31', 'ciudad' => 'Alicante', 'codigo_postal' => '03001'],
+            ['direccion' => 'Calle Jardines 12', 'ciudad' => 'Cordoba', 'codigo_postal' => '14001'],
+        ];
         foreach ($nombres as $index => $nombre) {
             $sociosIds[] = DB::table('users')->insertGetId([
                 'nombre' => $nombre . ' García',
                 'email' => strtolower($nombre) . $index . '@mail.com',
                 'dni' => '000000' . $index . 'X',
                 'password' => Hash::make('1234'),
+                'direccion' => $direcciones[$index]['direccion'],
+                'ciudad' => $direcciones[$index]['ciudad'],
+                'codigo_postal' => $direcciones[$index]['codigo_postal'],
                 'rol' => 'socio',
                 'estado' => 'activo',
                 'plan_id' => rand(1, 2),
@@ -197,3 +224,11 @@ class DatosGimnasioSeeder extends Seeder
         }
     }
 }
+
+
+
+
+
+
+
+

@@ -85,6 +85,48 @@ Route::post('/logout', function (Request $request) {
     return redirect('/');
 })->name('logout');
 
+Route::get('/register', function (Request $request) {
+    $planes = DB::table('planes')->orderBy('id')->get();
+
+    return view('public.register', compact('planes'));
+})->name('register');
+
+Route::post('/register', function (Request $request) {
+    $credentials = $request->validate([
+        'nombre' => ['required', 'string', 'max:100'],
+        'apellidos' => ['required', 'string', 'max:150'],
+        'email' => ['required', 'email', 'max:255', 'unique:users,email'],
+        'telefono' => ['required', 'string', 'max:30'],
+        'dni' => ['required', 'string', 'max:20', 'unique:users,dni'],
+        'fecha_nacimiento' => ['required', 'date'],
+        'direccion' => ['required', 'string', 'max:255'],
+        'ciudad' => ['required', 'string', 'max:100'],
+        'codigo_postal' => ['required', 'string', 'max:20'],
+        'plan_id' => ['required', 'exists:planes,id'],
+    ]);
+    
+    DB::table('users')->insert([
+        'nombre' => $credentials['nombre'],
+        'apellidos' => $credentials['apellidos'],
+        'email' => $credentials['email'],
+        'telefono' => $credentials['telefono'],
+        'dni' => $credentials['dni'],
+        'fecha_nacimiento' => $credentials['fecha_nacimiento'],
+        'direccion' => $credentials['direccion'],
+        'ciudad' => $credentials['ciudad'],
+        'codigo_postal' => $credentials['codigo_postal'],
+        'password' => bcrypt('1234'),
+        'rol' => 'socio',
+        'estado' => 'pendiente',
+        'plan_id' => $credentials['plan_id'],
+        'saldo_actual' => 0.00,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    return back()->with('status', 'Hemos recibido tu solicitud para hacerte socio de FitZone Gym. Un administrador revisará tu solicitud y te contactaremos en breve. Recibirás un email de confirmación cuando tu solicitud sea procesada.');
+})->name('register.attempt');
+
 // --------------------------------------------------------------------------
 // RUTAS PRIVADAS
 // --------------------------------------------------------------------------
