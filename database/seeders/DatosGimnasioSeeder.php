@@ -145,6 +145,7 @@ class DatosGimnasioSeeder extends Seeder
                 'fecha_inicio' => $fechaInicio,
                 'fecha_fin' => $fechaFin,
                 'plazas_totales' => $maximoAforo,
+                'coste_extra' => rand(0, 5) * 1.0,
                 'asistencia_actual' => 0,
                 'estado' => $estado,
                 'created_at' => now(), 'updated_at' => now()

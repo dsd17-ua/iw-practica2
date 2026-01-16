@@ -41,17 +41,23 @@ class SocioController extends Controller
 
         // Verificar si el usuario puede gastar una clase gratuita
         $claseGratuitaDisponible = DB::table('reservas')
+            ->join('clases', 'reservas.clase_id', '=', 'clases.id')
             ->where('user_id', $usuario->id)
             ->where('uso_clase_gratuita', true)
-            ->where('estado', 'asistida')
+            ->where('reservas.estado', '!=', 'cancelada')
+            ->whereBetween('clases.fecha_inicio', [
+                now()->startOfMonth(),
+                now()->endOfMonth()
+            ])
             ->count() < DB::table('planes')
                 ->where('id', $usuario->plan_id)
                 ->value('clases_gratis_incluidas');
 
+        $precioClase = DB::table('clases')->where('id', $claseId)->value('coste_extra');
+
         // Verificar si el usuario tiene saldo suficiente si no usa clase gratuita
         if (!$claseGratuitaDisponible) {
             $saldoUsuario = DB::table('users')->where('id', $usuario->id)->value('saldo_actual');
-            $precioClase = DB::table('clases')->where('id', $claseId)->value('coste_extra');
             if ($saldoUsuario < $precioClase) {
                 return back()->with('error', 'Saldo insuficiente para reservar esta actividad.');
             }
@@ -60,15 +66,15 @@ class SocioController extends Controller
         // Actualizar el saldo del usuario si paga por la clase
         DB::table('users')
             ->where('id', $usuario->id)
-            ->update(['saldo_actual' => DB::raw('saldo_actual - ' . $request->input('precio_pagado', 0))]);
+            ->update(['saldo_actual' => DB::raw('saldo_actual - ' . ($claseGratuitaDisponible ? 0 : $precioClase))]);
 
         // Registrar la reserva
         DB::table('reservas')->insert([
             'user_id' => $usuario->id,
             'clase_id' => $claseId,
             'fecha_reserva' => now(),
-            'uso_clase_gratuita' => $request->input('uso_clase_gratuita', false),
-            'precio_pagado' => $request->input('precio_pagado', 0),
+            'uso_clase_gratuita' => $claseGratuitaDisponible,
+            'precio_pagado' => $claseGratuitaDisponible ? 0 : $precioClase,
             'estado' => 'confirmada',
             'created_at' => now(),
             'updated_at' => now()
@@ -78,6 +84,19 @@ class SocioController extends Controller
         DB::table('clases')
             ->where('id', $claseId)
             ->increment('asistencia_actual');
+        
+        // Registrar la transacción si se ha pagado por la clase
+        if (!$claseGratuitaDisponible) {
+            DB::table('transacciones')->insert([
+                'user_id' => $usuario->id,
+                'fecha' => now(),
+                'monto' => $precioClase,
+                'tipo' => 'reserva de clase',
+                'concepto' => 'Reserva de clase ID ' . $claseId,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
 
         return redirect()->route('socio.reservas')->with('success', 'Actividad reservada correctamente.');
     }
@@ -165,18 +184,26 @@ class SocioController extends Controller
     public function getSaldo(Request $request)
     {
         $usuario = Auth::user();
-        $saldo = DB::table('users')->select('saldo_actual')->where('id', '=', $usuario->id)->first();
-        return view('socio.saldo', compact('saldo'));
+        $saldo = DB::table('users')->where('id', '=', $usuario->id)->value('saldo_actual');
+        $transacciones = DB::table('transacciones')
+            ->where('user_id', '=', $usuario->id)
+            ->orderByDesc('fecha')
+            ->get();
+        return view('socio.saldo', compact('saldo', 'transacciones'));
     }
 
     public function setSaldo(Request $request)
     {
         $usuario = Auth::user();
-        $monto = $request->input('monto');
+        $validated = $request->validate([
+            'monto' => ['required', 'integer', 'min:1'],
+        ], [
+            'monto.integer' => 'La cantidad debe ser un numero entero sin decimales.',
+        ]);
+        $monto = (int) $validated['monto'];
 
         try {
             // Integración con TPVV para procesar el pago
-            
         } catch (\Exception $e) {
             return back()->with('error', 'Error al procesar el pago: ' . $e->getMessage());
         }
