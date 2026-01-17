@@ -106,10 +106,15 @@
                         $salaNombre = $clase->sala_nombre ?? 'Sala por confirmar';
                         $plazasDisponibles = max(0, ($clase->plazas_totales ?? 0) - ($clase->asistencia_actual ?? 0));
                         $precioClase = $clase->clase_precio ?? 0;
-                        $yaReservado = \App\Models\Reserva::where('user_id', auth()->id())
+                        $reservaConfirmada = \App\Models\Reserva::where('user_id', auth()->id())
                             ->where('clase_id', $clase->id)
                             ->where('estado', 'confirmada')
                             ->exists();
+                        $reservaPendiente = \App\Models\Reserva::where('user_id', auth()->id())
+                            ->where('clase_id', $clase->id)
+                            ->where('estado', 'pendiente')
+                            ->orderByDesc('fecha_reserva')
+                            ->first();
                     @endphp
                     <article data-actividad="{{ $clase->actividad_nombre }}" class="actividad-card flex h-full flex-col rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
                         <div class="space-y-2">
@@ -156,7 +161,7 @@
                         </div>
 
                         <div class="mt-4 flex flex-wrap items-center justify-between gap-3 text-sm">
-                            <span class="rounded-full px-3 py-1 font-semibold {{ $yaReservado ? 'text-green-700 bg-green-50' : 'text-blue-700 bg-blue-50' }}">
+                            <span class="rounded-full px-3 py-1 font-semibold {{ $reservaConfirmada ? 'text-green-700 bg-green-50' : ($reservaPendiente ? 'text-amber-700 bg-amber-50' : 'text-blue-700 bg-blue-50') }}">
                                 {{ $plazasDisponibles }} plazas disponibles
                             </span>
                             <span class="text-sm font-semibold text-gray-900">
@@ -164,10 +169,17 @@
                             </span>
                         </div>
                         <div class="mt-6">
-                            @if ($yaReservado)
+                            @if ($reservaConfirmada)
                                 <button type="button" disabled class="w-full rounded-lg bg-gray-200 px-4 py-2 font-semibold text-gray-500 cursor-not-allowed">
                                     Ya reservado
                                 </button>
+                            @elseif ($reservaPendiente)
+                                <form action="{{ route('socio.reservas.reservar', ['claseId' => $clase->id]) }}" method="POST">
+                                    @csrf
+                                    <button type="submit" class="w-full rounded-lg bg-yellow-500 px-4 py-2 font-semibold text-white hover:bg-yellow-600">
+                                        Confirmar reserva
+                                    </button>
+                                </form>
                             @else
                                 <form action="{{ route('socio.reservas.reservar', ['claseId' => $clase->id]) }}" method="POST">
                                     @csrf
@@ -210,5 +222,4 @@
     })();
 </script>
 @endsection
-
 

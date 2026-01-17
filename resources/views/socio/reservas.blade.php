@@ -92,6 +92,7 @@
                                     'confirmada' => 'bg-blue-50 text-blue-700',
                                     'cancelada' => 'bg-red-50 text-red-600',
                                     'asistida' => 'bg-green-50 text-green-700',
+                                    'pendiente' => 'bg-amber-50 text-amber-700',
                                 ];
                                 $estadoLabel = ucfirst($reserva->estado);
                                 $fechaClase = \Carbon\Carbon::parse($reserva->fecha_clase ?? $reserva->fecha_reserva);
@@ -164,7 +165,14 @@
                                                 {{ $estadoLabel }}
                                             </span>
                                         </div>
-                                        @if ($esFutura && $reserva->estado !== 'cancelada')
+                                        @if ($esFutura && $reserva->estado === 'pendiente')
+                                            <form action="{{ route('socio.reservas.reservar', ['claseId' => $reserva->clase_id]) }}" method="POST">
+                                                @csrf
+                                                <button type="submit" class="rounded-xl bg-yellow-500 px-4 py-2 font-semibold text-white hover:bg-yellow-600">
+                                                    Confirmar
+                                                </button>
+                                            </form>
+                                        @elseif ($esFutura && $reserva->estado !== 'cancelada')
                                             <button type="button" data-reserva-id="{{ $reserva->id }}" class="js-cancelar-reserva rounded-xl bg-red-50 px-4 py-2 font-semibold text-red-600 hover:bg-red-100" style="background-color: #ffb8b8;">
                                                 Cancelar
                                             </button>
@@ -227,5 +235,3 @@
     });
 </script>
 @endsection
-
-

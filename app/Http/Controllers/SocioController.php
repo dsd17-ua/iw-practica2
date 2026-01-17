@@ -13,8 +13,34 @@ use Carbon\Carbon;
 
 class SocioController extends Controller
 {
+    private function limpiarReservasPendientesExpiradas(): void
+    {
+        $limite = now()->subMinutes(10);
+        $pendientes = DB::table('reservas')
+            ->where('estado', 'pendiente')
+            ->where('fecha_reserva', '<=', $limite)
+            ->get(['id', 'clase_id']);
+
+        foreach ($pendientes as $pendiente) {
+            DB::transaction(function () use ($pendiente) {
+                DB::table('reservas')
+                    ->where('id', $pendiente->id)
+                    ->update([
+                        'estado' => 'cancelada',
+                        'updated_at' => now(),
+                    ]);
+
+                DB::table('clases')
+                    ->where('id', $pendiente->clase_id)
+                    ->decrement('asistencia_actual');
+            });
+        }
+    }
+
     public function getActividades(Request $request)
     {
+        $this->limpiarReservasPendientesExpiradas();
+
         // Si el usuario tiene que renovar, redirigir a pagina de error
         $usuario = Auth::user();
         $proximaRenovacion = $usuario->proxima_renovacion
@@ -50,6 +76,14 @@ class SocioController extends Controller
     public function reservarActividad(Request $request, $claseId)
     {
         $usuario = Auth::user();
+        $this->limpiarReservasPendientesExpiradas();
+
+        $reservaExistente = DB::table('reservas')
+            ->where('user_id', $usuario->id)
+            ->where('clase_id', $claseId)
+            ->whereIn('estado', ['confirmada', 'pendiente'])
+            ->orderByDesc('fecha_reserva')
+            ->first();
 
         // Verificar si el usuario puede gastar una clase gratuita
         $claseGratuitaDisponible = DB::table('reservas')
@@ -67,11 +101,92 @@ class SocioController extends Controller
 
         $precioClase = DB::table('clases')->where('id', $claseId)->value('coste_extra');
 
+        if ($reservaExistente && $reservaExistente->estado === 'confirmada') {
+            return back()->with('success', 'Ya tienes una reserva confirmada para esta actividad.');
+        }
+
+        if ($reservaExistente && $reservaExistente->estado === 'pendiente') {
+            $expira = Carbon::parse($reservaExistente->fecha_reserva)->addMinutes(10);
+            if ($expira->isPast()) {
+                DB::transaction(function () use ($reservaExistente) {
+                    DB::table('reservas')
+                        ->where('id', $reservaExistente->id)
+                        ->update([
+                            'estado' => 'cancelada',
+                            'updated_at' => now(),
+                        ]);
+
+                    DB::table('clases')
+                        ->where('id', $reservaExistente->clase_id)
+                        ->decrement('asistencia_actual');
+                });
+            } else {
+                if ($claseGratuitaDisponible) {
+                    DB::table('reservas')
+                        ->where('id', $reservaExistente->id)
+                        ->update([
+                            'estado' => 'confirmada',
+                            'uso_clase_gratuita' => true,
+                            'precio_pagado' => 0,
+                            'updated_at' => now(),
+                        ]);
+
+                    return redirect()->route('socio.reservas')->with('success', 'Actividad reservada correctamente.');
+                }
+
+                if (!$claseGratuitaDisponible) {
+                    $saldoUsuario = DB::table('users')->where('id', $usuario->id)->value('saldo_actual');
+                    if ($saldoUsuario < $precioClase) {
+                        return back()->with('error', 'Saldo insuficiente. La plaza queda reservada un maximo de 10 minutos.');
+                    }
+
+                    DB::table('users')
+                        ->where('id', $usuario->id)
+                        ->update(['saldo_actual' => DB::raw('saldo_actual - ' . $precioClase)]);
+
+                    DB::table('reservas')
+                        ->where('id', $reservaExistente->id)
+                        ->update([
+                            'estado' => 'confirmada',
+                            'precio_pagado' => $precioClase,
+                            'updated_at' => now(),
+                        ]);
+
+                    DB::table('transacciones')->insert([
+                        'user_id' => $usuario->id,
+                        'fecha' => now(),
+                        'monto' => -$precioClase,
+                        'tipo' => 'reserva de clase',
+                        'concepto' => 'Reserva de clase ID ' . $claseId,
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+
+                    return redirect()->route('socio.reservas')->with('success', 'Actividad reservada correctamente.');
+                }
+            }
+        }
+
         // Verificar si el usuario tiene saldo suficiente si no usa clase gratuita
         if (!$claseGratuitaDisponible) {
             $saldoUsuario = DB::table('users')->where('id', $usuario->id)->value('saldo_actual');
             if ($saldoUsuario < $precioClase) {
-                return back()->with('error', 'Saldo insuficiente para reservar esta actividad.');
+                DB::table('reservas')->insert([
+                    'user_id' => $usuario->id,
+                    'clase_id' => $claseId,
+                    'fecha_reserva' => now(),
+                    'uso_clase_gratuita' => false,
+                    'precio_pagado' => 0,
+                    'estado' => 'pendiente',
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+
+                DB::table('clases')
+                    ->where('id', $claseId)
+                    ->increment('asistencia_actual');
+
+                return back()->with('error', 'Saldo insuficiente. La plaza queda reservada un maximo de 10 minutos.');
             }
         }
 
