@@ -205,6 +205,7 @@ Route::middleware(['auth', 'role:socio', 'estado:activo'])->group(function () {
     // 3. Saldo
     Route::get('/socio/saldo', [App\Http\Controllers\SocioController::class, 'getSaldo'])->name('socio.saldo');
     Route::post('/socio/saldo/recargar', [App\Http\Controllers\SocioController::class, 'setSaldo'])->name('socio.saldo.recargar');
+    Route::get('/socio/saldo/callback', [App\Http\Controllers\SocioController::class, 'handleSaldoCallback'])->name('socio.saldo.callback');
     
     // 4. Perfil
     Route::get('/socio/perfil', [App\Http\Controllers\SocioController::class, 'getPerfil'])->name('socio.perfil');

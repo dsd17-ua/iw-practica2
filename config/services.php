@@ -34,5 +34,10 @@ return [
             'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
         ],
     ],
+    
+    'tpvv' => [
+        'key' => env('TOKEN_API_TPVV'),
+        'base_url' => env('TPVV_BASE_URL', 'https://tpv-backend-cbbg.onrender.com'),
+    ],
 
 ];

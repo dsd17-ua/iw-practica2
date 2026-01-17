@@ -7,6 +7,7 @@ use App\Http\Requests;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 
@@ -101,7 +102,7 @@ class SocioController extends Controller
             DB::table('transacciones')->insert([
                 'user_id' => $usuario->id,
                 'fecha' => now(),
-                'monto' => $precioClase,
+                'monto' => -$precioClase,
                 'tipo' => 'reserva de clase',
                 'concepto' => 'Reserva de clase ID ' . $claseId,
                 'created_at' => now(),
@@ -222,29 +223,143 @@ class SocioController extends Controller
         $monto = (int) $validated['monto'];
 
         try {
-            // Integración con TPVV para procesar el pago
+            $apiKey = config('services.tpvv.key');
+            $baseUrl = rtrim(config('services.tpvv.base_url', 'https://tpv-backend-cbbg.onrender.com'), '/');
+
+            if (!$apiKey) {
+                return back()->with('error', 'No hay API Key configurada para el TPVV.');
+            }
+
+            $transaccionId = DB::table('transacciones')->insertGetId([
+                'user_id' => $usuario->id,
+                'fecha' => now(),
+                'monto' => $monto,
+                'tipo' => 'recarga_pendiente',
+                'concepto' => 'Recarga de saldo mediante TPVV (pendiente)',
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+
+            $externalReference = 'SALDO-' . $usuario->id . '-' . $transaccionId;
+            $callbackUrl = route('socio.saldo.callback');
+
+            $response = Http::withHeaders([
+                'X-API-KEY' => $apiKey,
+            ])->post($baseUrl . '/api/v1/payments/init', [
+                'amount' => $monto,
+                'callbackUrl' => $callbackUrl,
+                'externalReference' => $externalReference,
+            ]);
+
+            if (!$response->successful()) {
+                DB::table('transacciones')
+                    ->where('id', $transaccionId)
+                    ->update([
+                        'tipo' => 'recarga_fallida',
+                        'concepto' => 'Recarga fallida mediante TPVV (error init)',
+                        'updated_at' => now(),
+                    ]);
+
+                return back()->with('error', 'No se pudo iniciar el pago con el TPVV.');
+            }
+
+            $payload = $response->json();
+            $paymentUrl = $payload['paymentUrl'] ?? null;
+            $token = $payload['token'] ?? null;
+
+            if (!$paymentUrl || !$token) {
+                DB::table('transacciones')
+                    ->where('id', $transaccionId)
+                    ->update([
+                        'tipo' => 'recarga_fallida',
+                        'concepto' => 'Recarga fallida mediante TPVV (respuesta invalida)',
+                        'updated_at' => now(),
+                    ]);
+
+                return back()->with('error', 'Respuesta invalida del TPVV.');
+            }
+
+            DB::table('transacciones')
+                ->where('id', $transaccionId)
+                ->update([
+                    'concepto' => 'Recarga de saldo mediante TPVV (token: ' . $token . ')',
+                    'updated_at' => now(),
+                ]);
+
+            return redirect()->away($paymentUrl);
         } catch (\Exception $e) {
             return back()->with('error', 'Error al procesar el pago: ' . $e->getMessage());
         }
-
-        DB::table('users')
-            ->where('id', $usuario->id)
-            ->update(['saldo_actual' => DB::raw('saldo_actual + ' . $monto)]);
-
-        DB::table('transacciones')->insert([
-            'user_id' => $usuario->id,
-            'fecha' => now(),
-            'monto' => $monto,
-            'tipo' => 'recarga',
-            'concepto' => 'Recarga de saldo',
-            'created_at' => now(),
-            'updated_at' => now()
-        ]);
-
-        return redirect()->route('socio.saldo')->with('success', 'Saldo actualizado correctamente.');
     }
 
-    public function getPerfil(Request $request)
+    public function handleSaldoCallback(Request $request)
+    {
+        $token = $request->query('token');
+
+        if (!$token) {
+            return redirect()->route('socio.saldo')->with('error', 'Token de pago no recibido.');
+        }
+
+        $apiKey = config('services.tpvv.key');
+        $baseUrl = rtrim(config('services.tpvv.base_url', 'https://tpv-backend-cbbg.onrender.com'), '/');
+
+        if (!$apiKey) {
+            return redirect()->route('socio.saldo')->with('error', 'No hay API Key configurada para el TPVV.');
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'X-API-KEY' => $apiKey,
+            ])->get($baseUrl . '/api/v1/payments/verify/' . $token);
+
+            if (!$response->successful()) {
+                return redirect()->route('socio.saldo')->with('error', 'No se pudo verificar el pago.');
+            }
+
+            $status = $response->json('status');
+
+            $transaccion = DB::table('transacciones')
+                ->where('concepto', 'like', '%token: ' . $token . '%')
+                ->first();
+
+            if (!$transaccion) {
+                return redirect()->route('socio.saldo')->with('error', 'Transaccion no encontrada.');
+            }
+
+            if ($status === 'COMPLETED') {
+                if ($transaccion->tipo !== 'recarga') {
+                    DB::transaction(function () use ($transaccion) {
+                        DB::table('users')
+                            ->where('id', $transaccion->user_id)
+                            ->update(['saldo_actual' => DB::raw('saldo_actual + ' . $transaccion->monto)]);
+
+                        DB::table('transacciones')
+                            ->where('id', $transaccion->id)
+                            ->update([
+                                'tipo' => 'recarga',
+                                'concepto' => 'Recarga de saldo mediante TPVV',
+                                'updated_at' => now(),
+                            ]);
+                    });
+                }
+
+                return redirect()->route('socio.saldo')->with('success', 'Recarga completada correctamente.');
+            }
+
+            DB::table('transacciones')
+                ->where('id', $transaccion->id)
+                ->update([
+                    'tipo' => 'recarga_fallida',
+                    'concepto' => 'Recarga fallida mediante TPVV',
+                    'updated_at' => now(),
+                ]);
+
+            return redirect()->route('socio.saldo')->with('error', 'El pago no se completo.');
+        } catch (\Exception $e) {
+            return redirect()->route('socio.saldo')->with('error', 'Error al verificar el pago: ' . $e->getMessage());
+        }
+    }
+public function getPerfil(Request $request)
     {
         $usuario = Auth::user();
 
