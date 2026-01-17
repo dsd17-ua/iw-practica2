@@ -71,6 +71,11 @@
             <div>
                 <h1 class="text-2xl font-semibold text-gray-900">Gestión de Saldo</h1>
                 <p class="mt-2 text-sm text-gray-600">Recarga tu saldo para reservar actividades</p>
+                @if (session('error'))
+                    <div class="mt-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {{ session('error') }}
+                    </div>
+                @endif
             </div>
 
             <div class="flex flex-col gap-6 lg:flex-row">
@@ -196,3 +201,5 @@
     </div>
 </div>
 @endsection
+
+

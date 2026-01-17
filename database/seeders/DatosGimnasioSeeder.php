@@ -131,6 +131,42 @@ class DatosGimnasioSeeder extends Seeder
             ]);
         }
 
+        // Un socio que tiene que renovar (para comprobar pagina de error)
+        $sociosIds[] = DB::table('users')->insertGetId([
+            'nombre' => 'Laura Vencida', 'email' => 'renovar@mail.com', 'dni' => '87654321Y',
+            'password' => Hash::make('1234'), 'rol' => 'socio', 'estado' => 'activo',
+            'direccion' => 'Calle Reloj 8',
+            'ciudad' => 'Oviedo',
+            'codigo_postal' => '33001',
+            'numero_socio' => 'FZG-' . substr(hash('sha256', 'renovar@mail.com'), 0, 20),
+            'proxima_renovacion' => now()->subDay(),
+            'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
+        ]);
+
+        // Un socio bloqueado
+        $sociosIds[] = DB::table('users')->insertGetId([
+            'nombre' => 'Luis Bloqueado', 'email' => 'bloqueado@mail.com', 'dni' => '12345678Z',
+            'password' => Hash::make('1234'), 'rol' => 'socio', 'estado' => 'bloqueado',
+            'direccion' => 'Avenida Niebla 5',
+            'ciudad' => 'Burgos',
+            'codigo_postal' => '09001',
+            'numero_socio' => 'FZG-' . substr(hash('sha256', 'bloqueado@mail.com'), 0, 20),
+            'proxima_renovacion' => now()->addMonth(),
+            'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
+        ]);
+
+        // Un socio pendiente
+        $sociosIds[] = DB::table('users')->insertGetId([
+            'nombre' => 'Marta Pendiente', 'email' => 'pendiente@mail.com', 'dni' => '23456789A',
+            'password' => Hash::make('1234'), 'rol' => 'socio', 'estado' => 'pendiente',
+            'direccion' => 'Calle Primavera 10',
+            'ciudad' => 'Sevilla',
+            'codigo_postal' => '41001',
+            'numero_socio' => 'FZG-' . substr(hash('sha256', 'pendiente@mail.com'), 0, 20),
+            'proxima_renovacion' => now()->addMonth(),
+            'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
+        ]);
+
         // ==========================================
         // 4. GENERACIÓN DE CLASES (Horario)
         // ==========================================

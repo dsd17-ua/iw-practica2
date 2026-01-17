@@ -6,11 +6,25 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Http\Controllers\MonitorController;
+use Carbon\Carbon;
 
 Route::get('/', function () {
     if (Auth::check()) {
         $user = Auth::user();
+
         if ($user->rol === 'socio') {
+            if ($user->estado === 'bloqueado') {
+                return redirect()->route('socio.estado.bloqueado');
+            }
+            if ($user->estado === 'pendiente') {
+                return redirect()->route('socio.estado.pendiente');
+            }
+            $proximaRenovacion = $user->proxima_renovacion
+                ? Carbon::parse($user->proxima_renovacion)
+                : Carbon::parse($user->created_at)->addMonth();
+            if ($proximaRenovacion && $proximaRenovacion <= now()) {
+                return redirect()->route('socio.plan.renovar');
+            }
             return redirect()->route('socio.actividades');
         } elseif ($user->rol === 'webmaster') {
             return redirect()->route('webmaster.dashboard');
@@ -32,6 +46,13 @@ Route::get('/tarifas', function () {
 })->name('tarifas');
 
 Route::get('/contacto', function () {
+    // Si hay sesión iniciada, hacer logout automático
+    if (Auth::check()) {
+        Auth::logout();
+        session()->invalidate();
+        session()->regenerateToken();
+    }
+
     return view('public.contacto');
 })->name('contacto');
 
@@ -67,6 +88,45 @@ Route::post('/login', function (Request $request) {
 
     if (Auth::attempt($credentials)) {
         $request->session()->regenerate();
+
+        // Renovar automáticamente el plan si es necesario
+        $user = Auth::user();
+        if ($user->rol === 'socio' && $user->plan_id) {
+            $hoy = Carbon::today();
+            $proximaRenovacion = $user->proxima_renovacion
+                ? Carbon::parse($user->proxima_renovacion)
+                : Carbon::parse($user->created_at)->addMonth();
+
+            if ($proximaRenovacion->lessThanOrEqualTo($hoy)) {
+                $precioPlan = (float) DB::table('planes')
+                    ->where('id', $user->plan_id)
+                    ->value('precio_mensual');
+                $saldoActual = (float) DB::table('users')
+                    ->where('id', $user->id)
+                    ->value('saldo_actual');
+
+                if ($saldoActual < $precioPlan) {
+                    return redirect()
+                        ->route('socio.saldo')
+                        ->with('error', 'Saldo insuficiente para renovar el plan. Recarga tu saldo para continuar.');
+                }
+
+                DB::table('users')
+                    ->where('id', $user->id)
+                    ->update([
+                        'saldo_actual' => DB::raw('saldo_actual - ' . $precioPlan),
+                        'proxima_renovacion' => $proximaRenovacion->copy()->addMonth()->toDateString(),
+                        'updated_at' => now(),
+                    ]);
+            } elseif (is_null($user->proxima_renovacion)) {
+                DB::table('users')
+                    ->where('id', $user->id)
+                    ->update([
+                        'proxima_renovacion' => $proximaRenovacion->toDateString(),
+                        'updated_at' => now(),
+                    ]);
+            }
+        }
 
         return redirect()->intended('/');
     }
@@ -133,7 +193,7 @@ Route::post('/register', function (Request $request) {
 
 // Rutas del socio
 
-Route::middleware(['auth', 'role:socio'])->group(function () {
+Route::middleware(['auth', 'role:socio', 'estado:activo'])->group(function () {
     // 1. Actividades
     Route::get('/socio/actividades', [App\Http\Controllers\SocioController::class, 'getActividades'])->name('socio.actividades');
     
@@ -156,6 +216,16 @@ Route::middleware(['auth', 'role:socio'])->group(function () {
     
     // 6. Plan
     Route::get('/socio/plan', [App\Http\Controllers\SocioController::class, 'getPlan'])->name('socio.plan');
+    Route::post('/socio/plan/{planId}', [App\Http\Controllers\SocioController::class, 'setPlan'])->name('socio.plan.update');
+    Route::get('/socio/renovar/plan', [App\Http\Controllers\SocioController::class, 'renovarPlan'])->name('socio.plan.renovar');
+});
+
+Route::middleware(['auth', 'role:socio', 'estado:bloqueado'])->group(function () {
+    Route::get('/socio/estado/bloqueado', [App\Http\Controllers\SocioController::class, 'estadoBloqueado'])->name('socio.estado.bloqueado');
+});
+
+Route::middleware(['auth', 'role:socio', 'estado:pendiente'])->group(function () {
+    Route::get('/socio/estado/pendiente', [App\Http\Controllers\SocioController::class, 'estadoPendiente'])->name('socio.estado.pendiente');
 });
 
 // Rutas del webmaster

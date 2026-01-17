@@ -8,11 +8,21 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Carbon\Carbon;
 
 class SocioController extends Controller
 {
     public function getActividades(Request $request)
     {
+        // Si el usuario tiene que renovar, redirigir a pagina de error
+        $usuario = Auth::user();
+        $proximaRenovacion = $usuario->proxima_renovacion
+            ? Carbon::parse($usuario->proxima_renovacion)
+            : Carbon::parse($usuario->created_at)->addMonth();
+        if ($proximaRenovacion && $proximaRenovacion <= now()) {
+            return redirect()->route('socio.plan.renovar');
+        }
+
         $actividadesDisponibles = DB::table('actividades')->orderBy('nombre')->get();
 
         // Obtener las clases disponibles y poner su disponibilidad.
@@ -105,6 +115,14 @@ class SocioController extends Controller
     public function getReservas(Request $request)
     {
         $usuario = Auth::user();
+
+        // Si el usuario tiene que renovar, redirigir a pagina de error
+        $proximaRenovacion = $usuario->proxima_renovacion
+            ? Carbon::parse($usuario->proxima_renovacion)
+            : Carbon::parse($usuario->created_at)->addMonth();
+        if ($proximaRenovacion && $proximaRenovacion <= now()) {
+            return redirect()->route('socio.plan.renovar');
+        }
 
         // Actualizar el estado de las reservas basándose en la fecha actual
         DB::table('reservas')
@@ -230,14 +248,6 @@ class SocioController extends Controller
     {
         $usuario = Auth::user();
 
-        // Actualizar la fecha de la proxima renovación del plan si es necesario (va por meses desde la creacion de usuario)
-        DB::table('users')
-            ->where('id', $usuario->id)
-            ->update([
-                'proxima_renovacion' => DB::raw("DATE_ADD(created_at, INTERVAL TIMESTAMPDIFF(MONTH, created_at, NOW()) + 1 MONTH)"),
-                'updated_at' => now()
-            ]);
-
         $userDB = DB::table('users')
             ->where('id', $usuario->id)
             ->get();
@@ -309,6 +319,17 @@ class SocioController extends Controller
 
     public function getTienda(Request $request)
     {
+        $usuario = Auth::user();
+
+        // Si el usuario tiene que renovar, redirigir a pagina de error
+        $proximaRenovacion = $usuario->proxima_renovacion
+            ? Carbon::parse($usuario->proxima_renovacion)
+            : Carbon::parse($usuario->created_at)->addMonth();
+        if ($proximaRenovacion && $proximaRenovacion <= now()) {
+            return redirect()->route('socio.plan.renovar');
+        }
+
+
         // API Tienda
 
         return view('socio.tienda');
@@ -318,13 +339,74 @@ class SocioController extends Controller
     {
         $usuario = Auth::user();
 
+        // Si el usuario tiene que renovar, redirigir a pagina de error
+        $proximaRenovacion = $usuario->proxima_renovacion
+            ? Carbon::parse($usuario->proxima_renovacion)
+            : Carbon::parse($usuario->created_at)->addMonth();
+        if ($proximaRenovacion && $proximaRenovacion <= now()) {
+            return redirect()->route('socio.plan.renovar');
+        }
+
         $planActual = DB::table('planes')->where('id', $usuario->plan_id)->first();
 
         $planesDisponibles = DB::table('planes')->orderBy('nombre')->get();
 
         // Obtener las clases disponibles del usuario con el plan actual
-        // $clasesDisponibles = DB::table('')->orderBy()->get();
+        $clasesDisponibles = $planActual->clases_gratis_incluidas - DB::table('reservas')
+            ->join('clases', 'reservas.clase_id', '=', 'clases.id')
+            ->where('user_id', $usuario->id)
+            ->where('uso_clase_gratuita', true)
+            ->where('reservas.estado', '!=', 'cancelada')
+            ->whereBetween('clases.fecha_inicio', [
+                now()->startOfMonth(),
+                now()->endOfMonth()
+            ])
+            ->count();
 
-        return view('socio.plan', compact('planActual', 'planesDisponibles'));
+        return view('socio.plan', compact('planActual', 'planesDisponibles', 'clasesDisponibles'));
+    }
+
+    public function setPlan(Request $request, $planId)
+    {
+        $usuario = Auth::user();
+
+        $planId = (int) $planId;
+
+        if ($planId === (int) $usuario->plan_id) {
+            return back()->with('status', 'Ya tienes este plan activo.');
+        }
+
+        DB::table('users')
+            ->where('id', $usuario->id)
+            ->update([
+                'proximo_plan_id' => $planId,
+                'updated_at' => now(),
+            ]);
+
+        return back()->with('success', 'Plan actualizado correctamente, se aplicará en la próxima renovación.');
+    }
+
+    public function renovarPlan(Request $request)
+    {
+        $user = Auth::user();
+
+        $proximaRenovacion = $user->proxima_renovacion
+            ? Carbon::parse($user->proxima_renovacion)
+            : Carbon::parse($user->created_at)->addMonth();
+        if ($proximaRenovacion && $proximaRenovacion > now()) {
+            return redirect()->route('socio.actividades');
+        }
+
+        return view('socio.renovacion-bloqueada', );
+    }
+
+    public function estadoPendiente(Request $request)
+    {
+        return view('socio.estado-pendiente');
+    }
+
+    public function estadoBloqueado(Request $request)
+    {
+        return view('socio.estado-bloqueado');
     }
 }
