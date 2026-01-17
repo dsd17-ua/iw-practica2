@@ -98,6 +98,16 @@
                                 </div>
                             </div>
                         </div>
+                        @if ($planPendiente)
+                            <div class="rounded-2xl border border-amber-200 bg-amber-50 p-6 shadow-sm">
+                                <p class="text-sm font-semibold text-amber-900">Cambio pendiente de plan</p>
+                                <div class="mt-3 space-y-2 text-sm text-amber-900">
+                                    <p>Nuevo plan: <span class="font-semibold">{{ $planPendiente->nombre }}</span></p>
+                                    <p>Precio: {{ $planPendiente->precio_mensual }} EUR/mes</p>
+                                    <p>Se aplicara en el proximo pago ({{ $proximaRenovacion->format('d/m/Y') }})</p>
+                                </div>
+                            </div>
+                        @endif
                         <div class="rounded-2xl border border-blue-100 bg-blue-50 p-6 shadow-sm">
                             <p class="mb-3 text-sm font-semibold text-gray-900">Información</p>
                             <ul class="space-y-2 text-sm text-gray-700">

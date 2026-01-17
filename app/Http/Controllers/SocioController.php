@@ -466,6 +466,11 @@ public function getPerfil(Request $request)
 
         $planesDisponibles = DB::table('planes')->orderBy('nombre')->get();
 
+        $planPendiente = null;
+        if ($usuario->proximo_plan_id && (int) $usuario->proximo_plan_id !== (int) $usuario->plan_id) {
+            $planPendiente = DB::table('planes')->where('id', $usuario->proximo_plan_id)->first();
+        }
+
         // Obtener las clases disponibles del usuario con el plan actual
         $clasesDisponibles = $planActual->clases_gratis_incluidas - DB::table('reservas')
             ->join('clases', 'reservas.clase_id', '=', 'clases.id')
@@ -478,7 +483,7 @@ public function getPerfil(Request $request)
             ])
             ->count();
 
-        return view('socio.plan', compact('planActual', 'planesDisponibles', 'clasesDisponibles'));
+        return view('socio.plan', compact('planActual', 'planesDisponibles', 'clasesDisponibles', 'planPendiente', 'proximaRenovacion'));
     }
 
     public function setPlan(Request $request, $planId)
@@ -487,7 +492,22 @@ public function getPerfil(Request $request)
 
         $planId = (int) $planId;
 
+        if ($usuario->proximo_plan_id && $planId === (int) $usuario->proximo_plan_id) {
+            return back()->with('status', 'Ese cambio de plan ya esta pendiente.');
+        }
+
         if ($planId === (int) $usuario->plan_id) {
+            if ($usuario->proximo_plan_id) {
+                DB::table('users')
+                    ->where('id', $usuario->id)
+                    ->update([
+                        'proximo_plan_id' => null,
+                        'updated_at' => now(),
+                    ]);
+
+                return back()->with('success', 'Cambio de plan cancelado correctamente.');
+            }
+
             return back()->with('status', 'Ya tienes este plan activo.');
         }
 
