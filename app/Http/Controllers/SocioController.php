@@ -375,6 +375,7 @@ class SocioController extends Controller
                         'updated_at' => now(),
                     ]);
 
+                logger()->error('Error al iniciar pago TPVV: ' . $response->body());
                 return back()->with('error', 'No se pudo iniciar el pago con el TPVV.');
             }
 
@@ -455,6 +456,40 @@ class SocioController extends Controller
                                 'concepto' => 'Recarga de saldo mediante TPVV',
                                 'updated_at' => now(),
                             ]);
+                        
+                        // Renovar el plan si es necesario
+                        $usuario = DB::table('users')->where('id', $transaccion->user_id)->first();
+                        $planActual = DB::table('planes')->where('id', $usuario->plan_id);
+                        
+                        if ($usuario->saldo_actual < $planActual->value('precio_mensual')) {
+                            return redirect()->route('socio.saldo')->with('success', 'Recarga completada correctamente.');
+                        }
+                        
+                        $proximaRenovacion = $usuario->proxima_renovacion
+                            ? Carbon::parse($usuario->proxima_renovacion)
+                            : Carbon::parse($usuario->created_at)->addMonth();
+
+                        if ($proximaRenovacion && $proximaRenovacion <= now()) {
+                            DB::table('users')
+                                ->where('id', $usuario->id)
+                                ->update([
+                                    'proxima_renovacion' => $proximaRenovacion->addMonth(),
+                                    'plan_id' => $usuario->proximo_plan_id ? $usuario->proximo_plan_id : $usuario->plan_id,
+                                    'proximo_plan_id' => null,
+                                    'saldo_actual' => DB::raw('saldo_actual - ' . $planActual->value('precio_mensual')),
+                                    'updated_at' => now(),
+                                ]);
+                            
+                            DB::table('transacciones')->insert([
+                                'user_id' => $usuario->id,
+                                'fecha' => now(),
+                                'monto' => -$planActual->value('precio_mensual'),
+                                'tipo' => 'renovacion de plan',
+                                'concepto' => 'Renovacion automatica del plan ' . $planActual->value('nombre'),
+                                'created_at' => now(),
+                                'updated_at' => now()
+                            ]);
+                        }
                     });
                 }
 
@@ -474,6 +509,7 @@ class SocioController extends Controller
             return redirect()->route('socio.saldo')->with('error', 'Error al verificar el pago: ' . $e->getMessage());
         }
     }
+
 public function getPerfil(Request $request)
     {
         $usuario = Auth::user();
@@ -684,7 +720,10 @@ public function getPerfil(Request $request)
             return redirect()->route('socio.actividades');
         }
 
-        return view('socio.renovacion-bloqueada', );
+        // Obtener el plan actual del usuario
+        $planActual = DB::table('planes')->where('id', $user->plan_id)->first();
+
+        return view('socio.renovacion-bloqueada', compact('planActual'));
     }
 
     public function estadoPendiente(Request $request)

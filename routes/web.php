@@ -107,7 +107,7 @@ Route::post('/login', function (Request $request) {
 
                 if ($saldoActual < $precioPlan) {
                     return redirect()
-                        ->route('socio.saldo')
+                        ->route('socio.plan.renovar')
                         ->with('error', 'Saldo insuficiente para renovar el plan. Recarga tu saldo para continuar.');
                 }
 
