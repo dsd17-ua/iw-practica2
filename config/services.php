@@ -40,4 +40,10 @@ return [
         'base_url' => env('TPVV_BASE_URL', 'https://tpv-backend-cbbg.onrender.com'),
     ],
 
+    'tienda' => [
+        'key' => env('TIENDA_API_KEY'),
+        'base_url' => env('TIENDA_API_BASE_URL', 'https://9cd12a605d0b.ngrok-free.app'),
+        'api_prefix' => env('TIENDA_API_PREFIX', '/api'),
+    ],
+
 ];

@@ -214,6 +214,7 @@ Route::middleware(['auth', 'role:socio', 'estado:activo'])->group(function () {
     
     // 5. Tienda
     Route::get('/socio/tienda', [App\Http\Controllers\SocioController::class, 'getTienda'])->name('socio.tienda');
+    Route::post('/socio/tienda/comprar', [App\Http\Controllers\SocioController::class, 'comprarProducto'])->name('socio.tienda.comprar');
     
     // 6. Plan
     Route::get('/socio/plan', [App\Http\Controllers\SocioController::class, 'getPlan'])->name('socio.plan');

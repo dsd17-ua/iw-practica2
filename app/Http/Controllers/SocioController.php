@@ -445,9 +445,46 @@ public function getPerfil(Request $request)
         }
 
 
-        // API Tienda
+        $productos = [];
+        $categorias = [];
+        $tiendaError = null;
+        $apiKey = config('services.tienda.key');
+        $baseUrl = rtrim((string) config('services.tienda.base_url', ''), '/');
+        $apiPrefix = trim((string) config('services.tienda.api_prefix', ''), '/');
+        $apiPrefix = $apiPrefix ? '/' . $apiPrefix : '';
 
-        return view('socio.tienda');
+        if (!$apiKey || !$baseUrl) {
+            $tiendaError = 'La tienda externa no esta configurada. Contacta con soporte.';
+            return view('socio.tienda', compact('productos', 'categorias', 'tiendaError'));
+        }
+
+        try {
+            $headers = ['Authorization' => 'Api-Key ' . $apiKey];
+
+            $categoriasResponse = Http::withHeaders($headers)
+                ->timeout(10)
+                ->get($baseUrl . $apiPrefix . '/categorias');
+
+            if ($categoriasResponse->successful()) {
+                $categorias = $categoriasResponse->json() ?? [];
+            } else {
+                $tiendaError = 'No se pudieron cargar las categorias de la tienda.';
+            }
+
+            $productosResponse = Http::withHeaders($headers)
+                ->timeout(10)
+                ->get($baseUrl . $apiPrefix . '/productos');
+
+            if ($productosResponse->successful()) {
+                $productos = $productosResponse->json() ?? [];
+            } else {
+                $tiendaError = $tiendaError ?? 'No se pudieron cargar los productos de la tienda.';
+            }
+        } catch (\Exception $e) {
+            $tiendaError = 'Error al conectar con la tienda externa.';
+        }
+
+        return view('socio.tienda', compact('productos', 'categorias', 'tiendaError'));
     }
 
     public function getPlan(Request $request)
@@ -543,5 +580,92 @@ public function getPerfil(Request $request)
     public function estadoBloqueado(Request $request)
     {
         return view('socio.estado-bloqueado');
+    }
+
+    public function comprarProducto(Request $request)
+    {
+        $usuario = Auth::user();
+
+        // Si el usuario tiene que renovar, redirigir a pagina de error
+        $proximaRenovacion = $usuario->proxima_renovacion
+            ? Carbon::parse($usuario->proxima_renovacion)
+            : Carbon::parse($usuario->created_at)->addMonth();
+        if ($proximaRenovacion && $proximaRenovacion <= now()) {
+            return redirect()->route('socio.plan.renovar');
+        }
+
+        $validated = $request->validate([
+            'producto_id' => ['required', 'integer', 'min:1'],
+        ]);
+
+        $apiKey = config('services.tienda.key');
+        $baseUrl = rtrim((string) config('services.tienda.base_url', ''), '/');
+        $apiPrefix = trim((string) config('services.tienda.api_prefix', ''), '/');
+        $apiPrefix = $apiPrefix ? '/' . $apiPrefix : '';
+
+        if (!$apiKey || !$baseUrl) {
+            return back()->with('error', 'La tienda externa no esta configurada.');
+        }
+
+        try {
+            $headers = ['Authorization' => 'Api-Key ' . $apiKey];
+            $productoResponse = Http::withHeaders($headers)
+                ->timeout(10)
+                ->get($baseUrl . $apiPrefix . '/productos/' . $validated['producto_id']);
+
+            if (!$productoResponse->successful()) {
+                return back()->with('error', 'No se pudo obtener el producto seleccionado.');
+            }
+
+            $producto = $productoResponse->json();
+            $precioOferta = data_get($producto, 'precioOferta');
+            $precioBase = data_get($producto, 'precio');
+            $precioFinal = $precioOferta !== null ? $precioOferta : $precioBase;
+
+            if ($precioFinal === null) {
+                return back()->with('error', 'El producto no tiene precio disponible.');
+            }
+
+            $precioFinal = (float) $precioFinal;
+
+            DB::transaction(function () use ($usuario, $precioFinal, $producto, $validated) {
+                $saldoActual = (float) DB::table('users')
+                    ->where('id', $usuario->id)
+                    ->lockForUpdate()
+                    ->value('saldo_actual');
+
+                if ($saldoActual < $precioFinal) {
+                    throw new \RuntimeException('Saldo insuficiente para completar la compra.');
+                }
+
+                $precioFormatted = number_format($precioFinal, 2, '.', '');
+
+                DB::table('users')
+                    ->where('id', $usuario->id)
+                    ->update([
+                        'saldo_actual' => DB::raw('saldo_actual - ' . $precioFormatted),
+                        'updated_at' => now(),
+                    ]);
+
+                $nombreProducto = data_get($producto, 'nombre', 'Producto');
+                $concepto = 'Compra tienda: ' . $nombreProducto . ' (ID ' . $validated['producto_id'] . ')';
+
+                DB::table('transacciones')->insert([
+                    'user_id' => $usuario->id,
+                    'fecha' => now(),
+                    'monto' => -$precioFinal,
+                    'tipo' => 'compra_tienda',
+                    'concepto' => $concepto,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]);
+            });
+
+            return back()->with('success', 'Compra realizada correctamente.');
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            return back()->with('error', 'No se pudo completar la compra.');
+        }
     }
 }
