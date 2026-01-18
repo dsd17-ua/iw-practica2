@@ -21,7 +21,7 @@
                 <p class="mb-8 text-lg md:text-xl text-white/90">
                     El gimnasio mas completo con instalaciones de ultima generacion y los mejores profesionales.
                 </p>
-                <a href="#" class="inline-flex items-center rounded-lg bg-white px-8 py-3 font-semibold text-blue-700 transition hover:bg-gray-100">
+                <a href={{ route('login') }} class="inline-flex items-center rounded-lg bg-white px-8 py-3 font-semibold text-blue-700 transition hover:bg-gray-100">
                     Reserva tu clase gratuita
                 </a>
             </div>
@@ -79,7 +79,7 @@
             <p class="mb-8 text-lg text-white/90">
                 Unete a nuestra comunidad y comienza tu transformacion hoy mismo.
             </p>
-            <a href="#" class="inline-flex items-center rounded-lg bg-white px-8 py-3 font-semibold text-blue-700 transition hover:bg-gray-100">
+            <a href={{ route('register') }} class="inline-flex items-center rounded-lg bg-white px-8 py-3 font-semibold text-blue-700 transition hover:bg-gray-100">
                 Hazte socio ahora
             </a>
         </div>

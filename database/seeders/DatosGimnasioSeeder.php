@@ -94,6 +94,8 @@ class DatosGimnasioSeeder extends Seeder
             'direccion' => 'Calle Sol 15',
             'ciudad' => 'Granada',
             'codigo_postal' => '18002',
+            'numero_socio' => 'FZG-' . substr(hash('sha256', 'pepe@socio.com'), 0, 20),
+            'proxima_renovacion' => now()->addMonth(),
             'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
         ]);
 
@@ -123,9 +125,47 @@ class DatosGimnasioSeeder extends Seeder
                 'rol' => 'socio',
                 'estado' => 'activo',
                 'plan_id' => rand(1, 2),
+                'numero_socio' => 'FZG-' . substr(hash('sha256', strtolower($nombre) . $index . '@mail.com'), 0, 20),
+                'proxima_renovacion' => now()->addMonth(),
                 'created_at' => now(), 'updated_at' => now()
             ]);
         }
+
+        // Un socio que tiene que renovar (para comprobar pagina de error)
+        $sociosIds[] = DB::table('users')->insertGetId([
+            'nombre' => 'Laura Vencida', 'email' => 'renovar@mail.com', 'dni' => '87654321Y',
+            'password' => Hash::make('1234'), 'rol' => 'socio', 'estado' => 'activo',
+            'direccion' => 'Calle Reloj 8',
+            'ciudad' => 'Oviedo',
+            'codigo_postal' => '33001',
+            'numero_socio' => 'FZG-' . substr(hash('sha256', 'renovar@mail.com'), 0, 20),
+            'proxima_renovacion' => now()->subDay(),
+            'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
+        ]);
+
+        // Un socio bloqueado
+        $sociosIds[] = DB::table('users')->insertGetId([
+            'nombre' => 'Luis Bloqueado', 'email' => 'bloqueado@mail.com', 'dni' => '12345678Z',
+            'password' => Hash::make('1234'), 'rol' => 'socio', 'estado' => 'bloqueado',
+            'direccion' => 'Avenida Niebla 5',
+            'ciudad' => 'Burgos',
+            'codigo_postal' => '09001',
+            'numero_socio' => 'FZG-' . substr(hash('sha256', 'bloqueado@mail.com'), 0, 20),
+            'proxima_renovacion' => now()->addMonth(),
+            'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
+        ]);
+
+        // Un socio pendiente
+        $sociosIds[] = DB::table('users')->insertGetId([
+            'nombre' => 'Marta Pendiente', 'email' => 'pendiente@mail.com', 'dni' => '23456789A',
+            'password' => Hash::make('1234'), 'rol' => 'socio', 'estado' => 'pendiente',
+            'direccion' => 'Calle Primavera 10',
+            'ciudad' => 'Sevilla',
+            'codigo_postal' => '41001',
+            'numero_socio' => 'FZG-' . substr(hash('sha256', 'pendiente@mail.com'), 0, 20),
+            'proxima_renovacion' => now()->addMonth(),
+            'plan_id' => 1, 'created_at' => now(), 'updated_at' => now()
+        ]);
 
         // ==========================================
         // 4. GENERACIÓN DE CLASES (Horario)
@@ -136,19 +176,23 @@ class DatosGimnasioSeeder extends Seeder
             $fechaFin = (clone $fechaInicio)->addHour();
             $estado = $fechaInicio->isPast() ? 'finalizada' : 'programada';
 
+            $maximoAforo = DB::table('salas')->where('id', $salaId)->value('aforo_maximo');
+
             $claseId = DB::table('clases')->insertGetId([
                 'actividad_id' => $actId,
                 'sala_id' => $salaId,
                 'monitor_id' => $monitorId,
                 'fecha_inicio' => $fechaInicio,
                 'fecha_fin' => $fechaFin,
-                'plazas_totales' => 20,
+                'plazas_totales' => $maximoAforo,
+                'coste_extra' => rand(0, 5) * 1.0,
+                'asistencia_actual' => 0,
                 'estado' => $estado,
                 'created_at' => now(), 'updated_at' => now()
             ]);
 
             // Crear reservas aleatorias
-            $numAsistentes = rand(3, 15);
+            $numAsistentes = rand(3, $maximoAforo - 1);
             $asistentes = collect($sociosDisponibles)->random(min($numAsistentes, count($sociosDisponibles)));
 
             foreach ($asistentes as $socioId) {
@@ -159,6 +203,10 @@ class DatosGimnasioSeeder extends Seeder
                     'estado' => 'confirmada',
                     'created_at' => now(), 'updated_at' => now()
                 ]);
+
+                DB::table('clases')
+                    ->where('id', $claseId)
+                    ->increment('asistencia_actual');
             }
         };
 

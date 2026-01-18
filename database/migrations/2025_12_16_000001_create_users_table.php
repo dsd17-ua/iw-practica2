@@ -15,6 +15,9 @@ return new class extends Migration
             $table->id();
             // Relación con planes (puede ser null si es admin o monitor)
             $table->foreignId('plan_id')->nullable()->constrained('planes')->nullOnDelete();
+            $table->string('numero_socio')->unique()->nullable();
+            $table->date('proxima_renovacion')->nullable();
+            $table->foreignId('proximo_plan_id')->nullable()->constrained('planes')->nullOnDelete();
             
             $table->string('nombre');
             $table->string('apellidos')->nullable();

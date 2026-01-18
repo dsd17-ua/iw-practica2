@@ -24,6 +24,7 @@ return new class extends Migration
             $table->dateTime('fecha_fin');
             $table->decimal('coste_extra', 8, 2)->default(0.00);
             $table->integer('plazas_totales');
+            $table->integer('asistencia_actual')->default(0);
             $table->enum('estado', ['programada', 'finalizada', 'cancelada'])->default('programada');
             
             $table->timestamps();
