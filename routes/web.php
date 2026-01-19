@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Http\Controllers\MonitorController;
+use App\Http\Controllers\WebmasterController;
 use Carbon\Carbon;
 
 Route::get('/', function () {
@@ -230,10 +231,58 @@ Route::middleware(['auth', 'role:socio', 'estado:pendiente'])->group(function ()
     Route::get('/socio/estado/pendiente', [App\Http\Controllers\SocioController::class, 'estadoPendiente'])->name('socio.estado.pendiente');
 });
 
-// Rutas del webmaster
-Route::get('/webmaster/dashboard', function () {
-    return view('webmaster.dashboard');
-})->name('webmaster.dashboard')->middleware(['auth', 'role:webmaster']);
+Route::middleware(['auth', 'role:webmaster'])->prefix('webmaster')->name('webmaster.')->group(function () {
+    
+    // Dashboard
+    Route::get('/dashboard', [WebmasterController::class, 'dashboard'])
+        ->name('dashboard');
+    
+    // Gestión de Solicitudes
+    Route::get('/solicitudes', [WebmasterController::class, 'listarSolicitudes'])
+        ->name('solicitudes');
+    Route::post('/solicitudes/{id}/aprobar', [WebmasterController::class, 'aprobarSolicitud'])
+        ->name('solicitudes.aprobar');
+    Route::post('/solicitudes/{id}/rechazar', [WebmasterController::class, 'rechazarSolicitud'])
+        ->name('solicitudes.rechazar');
+    
+    // Gestión de Socios
+    Route::get('/socios', [WebmasterController::class, 'listarSocios'])
+        ->name('socios');
+    Route::post('/socios/{id}/estado', [WebmasterController::class, 'cambiarEstadoSocio'])
+        ->name('socios.estado');
+    
+    // Gestión de Actividades
+    Route::get('/actividades', [WebmasterController::class, 'listarActividades'])
+        ->name('actividades');
+    Route::get('/actividades/crear', [WebmasterController::class, 'crearActividad'])
+        ->name('actividades.crear');
+    Route::post('/actividades', [WebmasterController::class, 'guardarActividad'])
+        ->name('actividades.guardar');
+    Route::get('/actividades/{id}/editar', [WebmasterController::class, 'editarActividad'])
+        ->name('actividades.editar');
+    Route::put('/actividades/{id}', [WebmasterController::class, 'actualizarActividad'])
+        ->name('actividades.actualizar');
+    Route::delete('/actividades/{id}', [WebmasterController::class, 'eliminarActividad'])
+        ->name('actividades.eliminar');
+    
+    // Gestión de Clases
+    Route::get('/clases', [WebmasterController::class, 'listarClases'])
+        ->name('clases');
+    Route::get('/clases/crear', [WebmasterController::class, 'crearClase'])
+        ->name('clases.crear');
+    Route::post('/clases', [WebmasterController::class, 'guardarClase'])
+        ->name('clases.guardar');
+    Route::get('/clases/{id}/editar', [WebmasterController::class, 'editarClase'])
+        ->name('clases.editar');
+    Route::put('/clases/{id}', [WebmasterController::class, 'actualizarClase'])
+        ->name('clases.actualizar');
+    Route::delete('/clases/{id}', [WebmasterController::class, 'eliminarClase'])
+        ->name('clases.eliminar');
+    
+    // Informes y Estadísticas
+    Route::get('/informes/instalaciones', [WebmasterController::class, 'informeUsoInstalaciones'])
+        ->name('informes.instalaciones');
+});
 
 // Rutas del MONITOR
 // Agrupamos todas las rutas del monitor para aplicar el middleware de golpe
