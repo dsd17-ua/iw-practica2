@@ -19,7 +19,7 @@ return new class extends Migration
             $table->dateTime('fecha_reserva');
             $table->boolean('uso_clase_gratuita')->default(false); // Check para el plan
             $table->decimal('precio_pagado', 8, 2)->default(0.00);
-            $table->enum('estado', ['confirmada', 'cancelada', 'asistida'])->default('confirmada');
+            $table->enum('estado', ['confirmada', 'cancelada', 'asistida', 'pendiente'])->default('confirmada');
             
             $table->timestamps();
         });
