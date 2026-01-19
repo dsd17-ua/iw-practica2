@@ -44,9 +44,23 @@
                             @enderror
                         </div>
                         <div>
+                            <label class="mb-2 block text-sm font-medium text-gray-700" for="password">Contrasena *</label>
+                            <input class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-600" id="password" name="password" type="password" required>
+                            @error('password')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
                             <label class="mb-2 block text-sm font-medium text-gray-700" for="telefono">Telefono *</label>
                             <input class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-600" id="telefono" name="telefono" type="tel" value="{{ old('telefono') }}" required>
                             @error('telefono')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                            @enderror
+                        </div>
+                        <div>
+                            <label class="mb-2 block text-sm font-medium text-gray-700" for="password_confirmation">Confirmar contrasena *</label>
+                            <input class="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-600 focus:ring-2 focus:ring-blue-600" id="password_confirmation" name="password_confirmation" type="password" required>
+                            @error('password_confirmation')
                                 <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                             @enderror
                         </div>

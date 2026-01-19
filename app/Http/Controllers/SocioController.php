@@ -196,12 +196,13 @@ class SocioController extends Controller
             ->update(['saldo_actual' => DB::raw('saldo_actual - ' . ($claseGratuitaDisponible ? 0 : $precioClase))]);
 
         // Registrar la reserva
+        $usoClaseGratuita = $claseGratuitaDisponible && $precioClase > 0;
         DB::table('reservas')->insert([
             'user_id' => $usuario->id,
             'clase_id' => $claseId,
             'fecha_reserva' => now(),
-            'uso_clase_gratuita' => $claseGratuitaDisponible,
-            'precio_pagado' => $claseGratuitaDisponible ? 0 : $precioClase,
+            'uso_clase_gratuita' => $usoClaseGratuita,
+            'precio_pagado' => $usoClaseGratuita ? 0 : $precioClase,
             'estado' => 'confirmada',
             'created_at' => now(),
             'updated_at' => now()
