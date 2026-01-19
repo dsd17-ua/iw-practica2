@@ -42,7 +42,7 @@ return [
 
     'tienda' => [
         'key' => env('TIENDA_API_KEY'),
-        'base_url' => env('TIENDA_API_BASE_URL', 'https://9cd12a605d0b.ngrok-free.app'),
+        'base_url' => env('TIENDA_API_BASE_URL', 'https://c2c97e3a09f8.ngrok-free.app'),
         'api_prefix' => env('TIENDA_API_PREFIX', '/api'),
     ],
 
