@@ -10,6 +10,12 @@ class Clase extends Model
     use HasFactory;
     protected $table = 'clases'; // Laravel buscaría 'clase'
 
+    protected $fillable = [
+       'actividad_id', 'sala_id', 'monitor_id',
+       'fecha_inicio', 'fecha_fin', 'coste_extra',
+       'plazas_totales', 'asistencia_actual', 'estado'
+   ];
+
     // Relación: Una clase pertenece a una Actividad
     public function actividad()
     {
